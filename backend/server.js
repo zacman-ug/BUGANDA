@@ -85,16 +85,21 @@ app.post('/api/auth/register', async (req, res) => {
 
     try {
         const hashedPassword = await bcryptjs.hash(password, 10);
-        
+
+        // If there are no users yet, make the first registered user an admin (bootstrapping)
+        const [rows] = await pool.execute('SELECT COUNT(*) as cnt FROM users');
+        const userCount = (rows && rows[0] && rows[0].cnt) ? rows[0].cnt : 0;
+        const assignedRole = userCount === 0 ? 'admin' : 'viewer';
+
         const [result] = await pool.execute(
             'INSERT INTO users (full_name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
-            [full_name, email, hashedPassword, phone || null, 'viewer']
+            [full_name, email, hashedPassword, phone || null, assignedRole]
         );
 
         res.status(201).json({
             message: 'User registered successfully',
             userId: result.insertId,
-            role: 'viewer'
+            role: assignedRole
         });
     } catch (err) {
         console.error('Registration Error:', err);
@@ -103,6 +108,43 @@ app.post('/api/auth/register', async (req, res) => {
         } else {
             res.status(500).json({ error: 'Registration failed' });
         }
+        );
+
+        /**
+         * POST /api/admin/users
+         * Purpose: Admins can create new users with a specified role
+         */
+        app.post('/api/admin/users', verifyToken, verifyRole(['admin']), async (req, res) => {
+            const { full_name, email, password, phone, role } = req.body;
+            const validRoles = ['admin', 'contributor', 'viewer', 'moderator'];
+
+            if (!full_name || !email || !password) {
+                return res.status(400).json({ error: 'Full name, email, and password are required' });
+            }
+
+            if (role && !validRoles.includes(role)) {
+                return res.status(400).json({ error: 'Invalid role. Must be one of: ' + validRoles.join(', ') });
+            }
+
+            try {
+                const hashedPassword = await bcryptjs.hash(password, 10);
+                const assignedRole = role || 'viewer';
+
+                const [result] = await pool.execute(
+                    'INSERT INTO users (full_name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
+                    [full_name, email, hashedPassword, phone || null, assignedRole]
+                );
+
+                res.status(201).json({ message: 'User created', userId: result.insertId, role: assignedRole });
+            } catch (err) {
+                console.error('Admin Create User Error:', err);
+                if (err.code === 'ER_DUP_ENTRY') {
+                    res.status(400).json({ error: 'Email already exists' });
+                } else {
+                    res.status(500).json({ error: 'Failed to create user' });
+                }
+            }
+        });
     }
 });
 
