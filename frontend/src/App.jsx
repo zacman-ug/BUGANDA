@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/Layout';
 import FamilyTree from './pages/FamilyTree';
 import AddMemberForm from './components/AddMemberForm';
@@ -17,45 +17,52 @@ import Dashboard from './pages/Dashboard';
 /**
  * App Component - Root with Routing
  */
-function App() {
+function AppRoutes() {
   const { token } = useContext(HeritageContext);
+  const location = useLocation();
 
   return (
+    <Routes>
+      {/* Home Page - Public */}
+      <Route path="/" element={<Home />} />
+
+      {/* Authentication Routes - Public */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+
+      {/* Public Feature Routes */}
+      <Route path="/clans" element={<ClanDirectory />} />
+
+      {/* Protected Routes */}
+      <Route
+        path="/dashboard"
+        element={token ? <Dashboard /> : <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} />}
+      />
+
+      <Route
+        path="/profile"
+        element={token ? <UserProfile /> : <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} />}
+      />
+
+      <Route
+        path="/admin"
+        element={token ? <AdminDashboard /> : <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} />}
+      />
+
+      {/* Fallback redirect for authenticated users */}
+      <Route
+        path="/app"
+        element={<Navigate to={token ? "/dashboard" : "/login"} replace />}
+      />
+    </Routes>
+  );
+}
+
+function App() {
+  return (
     <BrowserRouter>
-      <Routes>
-        {/* Home Page - Public */}
-        <Route path="/" element={<Home />} />
-
-        {/* Authentication Routes - Public */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* Public Feature Routes */}
-        <Route path="/clans" element={<ClanDirectory />} />
-
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={token ? <Dashboard /> : <Navigate to="/login" />}
-        />
-
-        <Route
-          path="/profile"
-          element={token ? <UserProfile /> : <Navigate to="/login" />}
-        />
-
-        <Route
-          path="/admin"
-          element={token ? <AdminDashboard /> : <Navigate to="/login" />}
-        />
-
-        {/* Fallback redirect for authenticated users */}
-        <Route
-          path="/app"
-          element={<Navigate to={token ? "/dashboard" : "/login"} replace />}
-        />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }

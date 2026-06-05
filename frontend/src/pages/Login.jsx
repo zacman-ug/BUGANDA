@@ -12,6 +12,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get('next') || '/dashboard';
 
   useEffect(() => {
     if (searchParams.get('registered') === 'true') {
@@ -40,8 +41,8 @@ const Login = () => {
       setToken(token);
       setUser(user);
 
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // Redirect to next (if provided) or dashboard
+      navigate(nextPath);
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed. Please check your credentials.');
       console.error('Login error:', err);
@@ -65,7 +66,7 @@ const Login = () => {
       localStorage.setItem('user', JSON.stringify(user));
       setToken(token);
       setUser(user);
-      navigate('/dashboard');
+      navigate(nextPath);
     } catch (err) {
       setError('Demo login failed. Please use your own credentials.');
     } finally {
@@ -176,7 +177,7 @@ const Login = () => {
           <p className="text-gray-600 text-sm">
             Don't have an account?{' '}
             <Link
-              to="/register"
+              to={`/register?next=${encodeURIComponent(nextPath)}`}
               className="text-heritage-gold font-bold hover:text-heritage-bronze transition"
             >
               Create one now

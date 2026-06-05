@@ -7,6 +7,12 @@ const Home = () => {
   const navigate = useNavigate();
   const { token, individuals } = useContext(HeritageContext);
   const [clans, setClans] = useState([]);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [authTab, setAuthTab] = useState('login');
+  const [loginData, setLoginData] = useState({ email: '', password: '' });
+  const [registerData, setRegisterData] = useState({ full_name: '', email: '', password: '', confirmPassword: '' });
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
   const [stats, setStats] = useState({
     totalMembers: 0,
     totalClans: 0,
@@ -37,6 +43,80 @@ const Home = () => {
     });
   }, [individuals, clans]);
 
+  const nextPath = '/dashboard';
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    setAuthLoading(true);
+    try {
+      const res = await axios.post('/api/auth/login', {
+        email: loginData.email,
+        password: loginData.password
+      });
+      const { token: tkn, user } = res.data;
+      localStorage.setItem('token', tkn);
+      localStorage.setItem('user', JSON.stringify(user));
+      // update context
+      if (typeof window !== 'undefined') {
+        // use global event or navigate to refresh context via provider state
+      }
+      // set via context
+      // We don't have direct access to setToken/setUser here; use a short workaround by dispatching a custom event
+      window.dispatchEvent(new CustomEvent('auth:login', { detail: { token: tkn, user } }));
+      navigate(nextPath);
+    } catch (err) {
+      setAuthError(err.response?.data?.error || 'Login failed.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (registerData.password !== registerData.confirmPassword) {
+      setAuthError('Passwords do not match');
+      return;
+    }
+    setAuthLoading(true);
+    try {
+      await axios.post('/api/auth/register', {
+        full_name: registerData.full_name,
+        email: registerData.email,
+        password: registerData.password
+      });
+      // try auto-login
+      const res = await axios.post('/api/auth/login', { email: registerData.email, password: registerData.password });
+      const { token: tkn, user } = res.data;
+      localStorage.setItem('token', tkn);
+      localStorage.setItem('user', JSON.stringify(user));
+      window.dispatchEvent(new CustomEvent('auth:login', { detail: { token: tkn, user } }));
+      navigate(nextPath);
+    } catch (err) {
+      setAuthError(err.response?.data?.error || 'Registration failed.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Listen for the auth event to update context
+  useEffect(() => {
+    const handler = (e) => {
+      const { token: tkn, user } = e.detail || {};
+      // Gracefully update context by using window.history state change that HeritageProvider watches via localStorage
+      // HeritageProvider sets token from localStorage on mount and listens for changes via effect, so set nothing else here.
+      // Optionally we can reload the page to ensure context updates, but we'll avoid reload and instead dispatch storage event
+      try {
+        localStorage.setItem('token', tkn);
+        localStorage.setItem('user', JSON.stringify(user));
+        window.dispatchEvent(new Event('storage'));
+      } catch (err) {}
+    };
+    window.addEventListener('auth:login', handler);
+    return () => window.removeEventListener('auth:login', handler);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-heritage-dark via-gray-900 to-black">
       {/* Navbar */}
@@ -62,13 +142,13 @@ const Home = () => {
           ) : (
             <div className="space-x-3">
               <button
-                onClick={() => navigate('/login')}
+                onClick={() => navigate('/login?next=' + encodeURIComponent('/dashboard'))}
                 className="px-6 py-2 border border-heritage-gold text-heritage-gold rounded-full font-bold hover:bg-heritage-gold hover:text-heritage-dark transition"
               >
                 Login
               </button>
               <button
-                onClick={() => navigate('/register')}
+                onClick={() => navigate('/register?next=' + encodeURIComponent('/dashboard'))}
                 className="px-6 py-2 bg-heritage-gold text-heritage-dark rounded-full font-bold hover:bg-yellow-400 transition"
               >
                 Register
@@ -97,14 +177,103 @@ const Home = () => {
             "In every person lies a story, in every clan lies a legacy"
           </p>
           {!token && (
-            <button
-              onClick={() => navigate('/register')}
-              className="relative overflow-hidden bg-gradient-to-r from-heritage-gold via-yellow-300 to-heritage-gold text-heritage-dark px-10 py-4 rounded-full font-bold text-lg hover:shadow-heritage-lg transition-all duration-300 group before:absolute before:top-0 before:left-0 before:w-full before:h-full before:bg-gradient-to-r before:from-heritage-dark before:to-black before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300 transform hover:scale-105"
-            >
-              <span className="relative z-10 group-hover:text-heritage-gold transition-colors duration-300">
-                ✨ Start Preserving Your Heritage
-              </span>
-            </button>
+            <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-3xl mx-auto text-gray-800">
+              <div className="flex justify-center gap-2 mb-4">
+                <button
+                  onClick={() => setAuthTab('login')}
+                  className={`px-4 py-2 rounded-lg font-bold ${authTab === 'login' ? 'bg-heritage-gold text-heritage-dark' : 'border border-gray-200 text-gray-700'}`}
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setAuthTab('register')}
+                  className={`px-4 py-2 rounded-lg font-bold ${authTab === 'register' ? 'bg-heritage-gold text-heritage-dark' : 'border border-gray-200 text-gray-700'}`}
+                >
+                  Sign Up
+                </button>
+                <button
+                  onClick={() => { setAuthTab('guest'); navigate('/clans'); }}
+                  className="px-4 py-2 rounded-lg text-gray-600 border"
+                >
+                  Continue as guest
+                </button>
+              </div>
+
+              {authError && (
+                <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-lg border-l-4 border-red-500">
+                  {authError}
+                </div>
+              )}
+
+              {authTab === 'login' && (
+                <form onSubmit={handleLogin} className="space-y-4">
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={loginData.email}
+                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <div className="flex justify-between items-center">
+                    <button type="submit" disabled={authLoading} className="px-6 py-2 bg-heritage-gold text-heritage-dark rounded-xl font-bold">
+                      {authLoading ? 'Signing in...' : 'Sign In'}
+                    </button>
+                    <button type="button" onClick={() => navigate('/forgot-password')} className="text-sm text-heritage-gold">Forgot?</button>
+                  </div>
+                </form>
+              )}
+
+              {authTab === 'register' && (
+                <form onSubmit={handleRegister} className="space-y-4">
+                  <input
+                    type="text"
+                    placeholder="Full name"
+                    value={registerData.full_name}
+                    onChange={(e) => setRegisterData({ ...registerData, full_name: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={registerData.email}
+                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={registerData.password}
+                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Confirm password"
+                    value={registerData.confirmPassword}
+                    onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                    required
+                    className="w-full border-2 border-gray-200 rounded-xl p-3 focus:border-heritage-gold outline-none"
+                  />
+                  <div className="flex justify-end">
+                    <button type="submit" disabled={authLoading} className="px-6 py-2 bg-heritage-gold text-heritage-dark rounded-xl font-bold">
+                      {authLoading ? 'Creating...' : 'Create Account'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           )}
         </div>
       </section>

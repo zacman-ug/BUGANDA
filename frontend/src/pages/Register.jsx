@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -16,6 +17,8 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextPath = searchParams.get('next') || '';
 
   // Check password strength
   const checkPasswordStrength = (password) => {
@@ -62,8 +65,8 @@ const Register = () => {
         phone: formData.phone
       });
 
-      // Redirect to login with success message
-      navigate('/login?registered=true');
+      // Redirect to login with success message and preserve next path
+      navigate(`/login?registered=true${nextPath ? '&next=' + encodeURIComponent(nextPath) : ''}`);
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed. Please try again.');
       console.error('Registration error:', err);
@@ -238,7 +241,7 @@ const Register = () => {
           <p className="text-gray-600 text-sm">
             Already have an account?{' '}
             <Link
-              to="/login"
+              to={`/login?next=${encodeURIComponent(nextPath)}`}
               className="text-heritage-gold font-bold hover:text-heritage-bronze transition"
             >
               Login here

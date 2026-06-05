@@ -193,9 +193,9 @@ Now the application leverages these relationships! 🎉
 
 ```
 ┌─────────────────────────── Frontend ────────────────────────────┐
-│                                                                  │
-│  App.jsx                                                         │
-│    ├─ HeritageStats (Charts)                                   │
+│                                                                 │
+│  App.jsx                                                        │
+│    ├─ HeritageStats (Charts)                                    │
 │    └─ FamilyTree (NEW hybrid component)                         │
 │         ├─ View Mode Switcher                                   │
 │         ├─ Clan Filter Selector                                 │
@@ -205,9 +205,9 @@ Now the application leverages these relationships! 🎉
 │             │       ├─ Nodes (interactive people)               │
 │             │       ├─ Edges (parent→child lines)               │
 │             │       └─ Details Panel (click info)               │
-│             │                                                    │
+│             │                                                   │
 │             └─ Original Card Grid Layout                        │
-│                                                                  │
+│                                                                 │
 │  AddMemberForm (UPDATED)                                        │
 │    ├─ Full Name                                                 │
 │    ├─ Gender                                                    │
@@ -215,33 +215,33 @@ Now the application leverages these relationships! 🎉
 │    ├─ Father Selector (NEW)                                     │
 │    ├─ Mother Selector (NEW)                                     │
 │    └─ Bio                                                       │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
                               ↕
                          HTTP/REST API
                               ↕
 ┌─────────────────────────── Backend ────────────────────────────┐
-│                                                                  │
-│  Express Server (server.js - UPDATED)                           │
-│    ├─ POST /api/individuals                                     │
-│    │   └─ Insert with parent relationships                      │
-│    │                                                             │
-│    ├─ GET /api/individuals                                      │
-│    │   └─ Flat list (for AddForm dropdowns)                     │
-│    │                                                             │
-│    ├─ GET /api/clans                                            │
-│    │   └─ List of all clans                                     │
-│    │                                                             │
-│    ├─ GET /api/family-tree (NEW)                                │
-│    │   └─ Hierarchical tree {roots, allIndividuals}             │
-│    │                                                             │
-│    └─ GET /api/individuals/:id/lineage (NEW)                    │
-│        └─ Full lineage {person, parents, children}              │
-│                                                                  │
-│  MySQL Database                                                  │
-│    └─ individuals table with parent references                  │
-│                                                                  │
-└──────────────────────────────────────────────────────────────────┘
+│                                                                │
+│  Express Server (server.js - UPDATED)                          │
+│    ├─ POST /api/individuals                                    │
+│    │   └─ Insert with parent relationships                     │
+│    │                                                           │
+│    ├─ GET /api/individuals                                     │
+│    │   └─ Flat list (for AddForm dropdowns)                    │
+│    │                                                           │
+│    ├─ GET /api/clans                                           │
+│    │   └─ List of all clans                                    │
+│    │                                                           │
+│    ├─ GET /api/family-tree (NEW)                               │
+│    │   └─ Hierarchical tree {roots, allIndividuals}            │
+│    │                                                           │
+│    └─ GET /api/individuals/:id/lineage (NEW)                   │
+│        └─ Full lineage {person, parents, children}             │
+│                                                                │
+│  MySQL Database                                                │
+│    └─ individuals table with parent references                 │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---

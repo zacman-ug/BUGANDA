@@ -24,6 +24,33 @@ export const HeritageProvider = ({ children }) => {
     }
   }, [token]);
 
+  // Listen for auth events (from other parts of the app) and storage changes
+  useEffect(() => {
+    const onAuthLogin = (e) => {
+      const detail = e.detail || {};
+      if (detail.token) {
+        setToken(detail.token);
+      }
+      if (detail.user) {
+        setUser(detail.user);
+      }
+    };
+
+    const onStorage = () => {
+      const t = localStorage.getItem('token');
+      const u = localStorage.getItem('user');
+      setToken(t);
+      setUser(u ? JSON.parse(u) : null);
+    };
+
+    window.addEventListener('auth:login', onAuthLogin);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('auth:login', onAuthLogin);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
   // Fetch data from our Node.js Backend
   const fetchHeritageData = async () => {
     if (!token) {
