@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+/* Define our Heritage Theme right here in CSS */
+@theme {
+  --color-heritage-gold: #D4AF37;
+  --color-heritage-dark: #1a1a1a;
+  --color-heritage-cream: #FDFBF7;
+}
+
+/* Now we can use those variables */
+body {
+  @apply bg-heritage-cream text-gray-900;
+  font-family: 'Inter', sans-serif;
+}
