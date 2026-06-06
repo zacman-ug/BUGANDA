@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const Home = () => {
   const navigate = useNavigate();
-  const { token, individuals } = useContext(HeritageContext);
+  const { token, individuals, logout } = useContext(HeritageContext);
   const [clans, setClans] = useState([]);
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [authTab, setAuthTab] = useState('login');
@@ -133,12 +133,20 @@ const Home = () => {
             Clan Directory
           </button>
           {token ? (
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="bg-heritage-gold text-heritage-dark px-6 py-2 rounded-full font-bold hover:bg-yellow-400 transition"
-            >
-              Go to Dashboard
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="bg-heritage-gold text-heritage-dark px-6 py-2 rounded-full font-bold hover:bg-yellow-400 transition"
+              >
+                Go to Dashboard
+              </button>
+              <button
+                onClick={() => { logout(); navigate('/'); }}
+                className="px-4 py-2 border border-heritage-gold text-heritage-gold rounded-full font-bold hover:bg-red-600 hover:text-white transition"
+              >
+                Logout
+              </button>
+            </div>
           ) : (
             <div className="space-x-3">
               <button

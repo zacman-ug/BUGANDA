@@ -22,6 +22,9 @@ const MemberDetailsPanel = ({ member, onClose, onEdit, individuals = [] }) => {
   const mother = member.mother_id 
     ? individuals.find(p => p.id === member.mother_id) 
     : null;
+  const spouse = member.spouse_id
+    ? individuals.find(p => p.id === member.spouse_id)
+    : null;
   const children = individuals.filter(p => p.father_id === member.id || p.mother_id === member.id);
   const siblings = individuals.filter(p => 
     (p.father_id === father?.id || p.mother_id === mother?.id) && p.id !== member.id
@@ -62,6 +65,42 @@ const MemberDetailsPanel = ({ member, onClose, onEdit, individuals = [] }) => {
                 <p className="text-gray-600 text-sm">Clan</p>
                 <p className="font-semibold text-heritage-dark">{member.clan_name || 'N/A'}</p>
               </div>
+              {member.date_of_birth && (
+                <div>
+                  <p className="text-gray-600 text-sm">Date of Birth</p>
+                  <p className="font-semibold text-heritage-dark">{member.date_of_birth}</p>
+                </div>
+              )}
+              {member.date_of_death && (
+                <div>
+                  <p className="text-gray-600 text-sm">Date of Death</p>
+                  <p className="font-semibold text-heritage-dark">{member.date_of_death}</p>
+                </div>
+              )}
+              {member.occupation && (
+                <div>
+                  <p className="text-gray-600 text-sm">Occupation</p>
+                  <p className="font-semibold text-heritage-dark">{member.occupation}</p>
+                </div>
+              )}
+              {member.residence && (
+                <div>
+                  <p className="text-gray-600 text-sm">Residence</p>
+                  <p className="font-semibold text-heritage-dark">{member.residence}</p>
+                </div>
+              )}
+              {member.alternative_name && (
+                <div>
+                  <p className="text-gray-600 text-sm">Alternative Name</p>
+                  <p className="font-semibold text-heritage-dark">{member.alternative_name}</p>
+                </div>
+              )}
+              {spouse && (
+                <div>
+                  <p className="text-gray-600 text-sm">Spouse</p>
+                  <p className="font-semibold text-heritage-dark">{spouse.full_name}</p>
+                </div>
+              )}
             </div>
             {member.bio && (
               <div className="mt-3 pt-3 border-t">

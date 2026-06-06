@@ -371,6 +371,36 @@ const GenerationalFamilyTree = ({ individuals = [], rootPersonId = null }) => {
             )}
 
             <div className="grid grid-cols-2 gap-4 text-sm">
+              {selectedNode.date_of_birth && (
+                <div>
+                  <p className="text-gray-600 font-semibold">Date of Birth</p>
+                  <p className="text-gray-700">{selectedNode.date_of_birth}</p>
+                </div>
+              )}
+              {selectedNode.date_of_death && (
+                <div>
+                  <p className="text-gray-600 font-semibold">Date of Death</p>
+                  <p className="text-gray-700">{selectedNode.date_of_death}</p>
+                </div>
+              )}
+              {selectedNode.occupation && (
+                <div>
+                  <p className="text-gray-600 font-semibold">Occupation</p>
+                  <p className="text-gray-700">{selectedNode.occupation}</p>
+                </div>
+              )}
+              {selectedNode.residence && (
+                <div>
+                  <p className="text-gray-600 font-semibold">Residence</p>
+                  <p className="text-gray-700">{selectedNode.residence}</p>
+                </div>
+              )}
+              {selectedNode.alternative_name && (
+                <div>
+                  <p className="text-gray-600 font-semibold">Alternative Name</p>
+                  <p className="text-gray-700">{selectedNode.alternative_name}</p>
+                </div>
+              )}
               {selectedNode.father_id && (
                 <div>
                   <p className="text-gray-600 font-semibold">Father</p>

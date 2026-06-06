@@ -108,43 +108,6 @@ app.post('/api/auth/register', async (req, res) => {
         } else {
             res.status(500).json({ error: 'Registration failed' });
         }
-        );
-
-        /**
-         * POST /api/admin/users
-         * Purpose: Admins can create new users with a specified role
-         */
-        app.post('/api/admin/users', verifyToken, verifyRole(['admin']), async (req, res) => {
-            const { full_name, email, password, phone, role } = req.body;
-            const validRoles = ['admin', 'contributor', 'viewer', 'moderator'];
-
-            if (!full_name || !email || !password) {
-                return res.status(400).json({ error: 'Full name, email, and password are required' });
-            }
-
-            if (role && !validRoles.includes(role)) {
-                return res.status(400).json({ error: 'Invalid role. Must be one of: ' + validRoles.join(', ') });
-            }
-
-            try {
-                const hashedPassword = await bcryptjs.hash(password, 10);
-                const assignedRole = role || 'viewer';
-
-                const [result] = await pool.execute(
-                    'INSERT INTO users (full_name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
-                    [full_name, email, hashedPassword, phone || null, assignedRole]
-                );
-
-                res.status(201).json({ message: 'User created', userId: result.insertId, role: assignedRole });
-            } catch (err) {
-                console.error('Admin Create User Error:', err);
-                if (err.code === 'ER_DUP_ENTRY') {
-                    res.status(400).json({ error: 'Email already exists' });
-                } else {
-                    res.status(500).json({ error: 'Failed to create user' });
-                }
-            }
-        });
     }
 });
 
@@ -430,19 +393,58 @@ app.get('/api/individuals', verifyToken, async (req, res) => {
  * Purpose: Receives new member data from the frontend form and saves it to MySQL (user-specific)
  */
 app.post('/api/individuals', verifyToken, async (req, res) => {
-    const { full_name, gender, clan_id, father_id, mother_id, bio } = req.body;
-    
+    const {
+        full_name, gender, clan_id, father_id, mother_id, bio,
+        date_of_birth, date_of_death, spouse_id, occupation, residence, alternative_name
+    } = req.body;
+
     if (!full_name || !gender) {
         return res.status(400).json({ error: "Full name and gender are required." });
     }
 
     try {
-        const sql = 'INSERT INTO individuals (full_name, gender, clan_id, father_id, mother_id, bio, user_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        const [result] = await pool.execute(sql, [full_name, gender, clan_id || null, father_id || null, mother_id || null, bio || '', req.userId]);
-        
-        res.status(201).json({ 
-            message: "Record preserved successfully", 
-            id: result.insertId 
+        let finalClanId = clan_id || null;
+        if (father_id && !clan_id) {
+            const [father] = await pool.execute(
+                'SELECT clan_id FROM individuals WHERE id = ? AND user_id = ?',
+                [father_id, req.userId]
+            );
+            if (father.length > 0) {
+                finalClanId = father[0].clan_id;
+            }
+        }
+
+        const sql = `INSERT INTO individuals (
+            full_name, gender, clan_id, father_id, mother_id, bio,
+            date_of_birth, date_of_death, spouse_id, occupation, residence, alternative_name, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const [result] = await pool.execute(sql, [
+            full_name,
+            gender,
+            finalClanId,
+            father_id || null,
+            mother_id || null,
+            bio || null,
+            date_of_birth || null,
+            date_of_death || null,
+            spouse_id || null,
+            occupation || null,
+            residence || null,
+            alternative_name || null,
+            req.userId
+        ]);
+
+        if (spouse_id) {
+            await pool.execute(
+                'UPDATE individuals SET spouse_id = ? WHERE id = ? AND user_id = ?',
+                [result.insertId, spouse_id, req.userId]
+            );
+        }
+
+        res.status(201).json({
+            message: "Record preserved successfully",
+            id: result.insertId
         });
     } catch (err) {
         console.error("Insert Error:", err);
@@ -459,6 +461,7 @@ app.get('/api/clans', async (req, res) => {
         const [clans] = await pool.query('SELECT * FROM clans');
         res.json(clans);
     } catch (err) {
+        console.error('Clans Error:', err);
         res.status(500).json({ error: "Could not load clans" });
     }
 });
@@ -560,6 +563,42 @@ app.get('/api/individuals/:id/lineage', verifyToken, async (req, res) => {
 });
 
 // 6. ROLE-BASED ADMIN ENDPOINTS
+
+/**
+ * POST /api/admin/users
+ * Purpose: Admins can create new users with a specified role
+ */
+app.post('/api/admin/users', verifyToken, verifyRole(['admin']), async (req, res) => {
+    const { full_name, email, password, phone, role } = req.body;
+    const validRoles = ['admin', 'contributor', 'viewer', 'moderator'];
+
+    if (!full_name || !email || !password) {
+        return res.status(400).json({ error: 'Full name, email, and password are required' });
+    }
+
+    if (role && !validRoles.includes(role)) {
+        return res.status(400).json({ error: 'Invalid role. Must be one of: ' + validRoles.join(', ') });
+    }
+
+    try {
+        const hashedPassword = await bcryptjs.hash(password, 10);
+        const assignedRole = role || 'viewer';
+
+        const [result] = await pool.execute(
+            'INSERT INTO users (full_name, email, password_hash, phone, role) VALUES (?, ?, ?, ?, ?)',
+            [full_name, email, hashedPassword, phone || null, assignedRole]
+        );
+
+        res.status(201).json({ message: 'User created', userId: result.insertId, role: assignedRole });
+    } catch (err) {
+        console.error('Admin Create User Error:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            res.status(400).json({ error: 'Email already exists' });
+        } else {
+            res.status(500).json({ error: 'Failed to create user' });
+        }
+    }
+});
 
 /**
  * GET /api/admin/users
