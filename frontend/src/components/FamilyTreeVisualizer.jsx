@@ -35,62 +35,73 @@ const FamilyTreeVisualizer = ({ clanFilter = null }) => {
 
         const newNodes = [];
         const newEdges = [];
+        const createdNodeIds = new Set();
+        const createdEdgeIds = new Set();
         let yOffset = 0;
 
         // Helper function to recursively process individuals and create nodes/edges
         const processIndividual = (individual, x = 0, y = yOffset, generation = 0) => {
           const nodeId = `node-${individual.id}`;
+          const isNewNode = !createdNodeIds.has(nodeId);
           yOffset += 100; // Increase spacing for each node
 
-          const nodeColor = individual.gender === 'Male' ? '#2563EB' : '#DB2777';
-          const nodeLabel = individual.full_name.substring(0, 20);
-          const genderSymbol = individual.gender === 'Male' ? '♂' : '♀';
+          if (isNewNode) {
+            const nodeColor = individual.gender === 'Male' ? '#2563EB' : '#DB2777';
+            const nodeLabel = individual.full_name.substring(0, 20);
+            const genderSymbol = individual.gender === 'Male' ? '♂' : '♀';
 
-          newNodes.push({
-            id: nodeId,
-            data: {
-              label: (
-                <div className="text-center py-2">
-                  <div className="text-2xl font-bold mb-2">{genderSymbol}</div>
-                  <div className="font-bold text-sm leading-tight">{nodeLabel}</div>
-                  <div className="text-xs opacity-85 mt-1 font-medium">{individual.clan_name || 'Unknown'}</div>
-                </div>
-              ),
-              individual,
-            },
-            position: { x: x + generation * 250, y },
-            style: {
-              background: nodeColor,
-              color: 'white',
-              border: '3px solid #FFD700',
-              borderRadius: '12px',
-              padding: '14px 10px',
-              width: '170px',
-              fontSize: '12px',
-              cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
-              transition: 'all 0.3s ease',
-              fontWeight: '600',
-            },
-          });
+            newNodes.push({
+              id: nodeId,
+              data: {
+                label: (
+                  <div className="text-center py-2">
+                    <div className="text-2xl font-bold mb-2">{genderSymbol}</div>
+                    <div className="font-bold text-sm leading-tight">{nodeLabel}</div>
+                    <div className="text-xs opacity-85 mt-1 font-medium">{individual.clan_name || 'Unknown'}</div>
+                  </div>
+                ),
+                individual,
+              },
+              position: { x: x + generation * 250, y },
+              style: {
+                background: nodeColor,
+                color: 'white',
+                border: '3px solid #FFD700',
+                borderRadius: '12px',
+                padding: '14px 10px',
+                width: '170px',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                fontWeight: '600',
+              },
+            });
+            createdNodeIds.add(nodeId);
+          }
 
           // Create edges to children
           if (individual.children && individual.children.length > 0) {
             individual.children.forEach((child, index) => {
-              const childX = x + (index - individual.children.length / 2) * 200;
               const edgeId = `edge-${individual.id}-${child.id}`;
 
-              newEdges.push({
-                id: edgeId,
-                source: nodeId,
-                target: `node-${child.id}`,
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#D4AF37' },
-                style: { stroke: '#D4AF37', strokeWidth: 2.5, opacity: 0.8 },
-                animated: false,
-                curvature: 0.5,
-              });
+              if (!createdEdgeIds.has(edgeId)) {
+                newEdges.push({
+                  id: edgeId,
+                  source: nodeId,
+                  target: `node-${child.id}`,
+                  markerEnd: { type: MarkerType.ArrowClosed, color: '#D4AF37' },
+                  style: { stroke: '#D4AF37', strokeWidth: 2.5, opacity: 0.8 },
+                  animated: false,
+                  curvature: 0.5,
+                });
+                createdEdgeIds.add(edgeId);
+              }
 
-              processIndividual(child, childX, yOffset, generation + 1);
+              if (!createdNodeIds.has(`node-${child.id}`)) {
+                const childX = x + (index - individual.children.length / 2) * 200;
+                processIndividual(child, childX, yOffset, generation + 1);
+              }
             });
           }
         };

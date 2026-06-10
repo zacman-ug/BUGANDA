@@ -55,7 +55,7 @@ const AdvancedSearch = ({ onResults }) => {
 
     // Clan filter
     if (filters.clan) {
-      results = results.filter(p => p.clan_name === filters.clan);
+      results = results.filter(p => p.clan_id === parseInt(filters.clan, 10));
     }
 
     // Has parents
@@ -140,7 +140,7 @@ const AdvancedSearch = ({ onResults }) => {
           >
             <option value="">All Clans</option>
             {clanOptions.map(clan => (
-              <option key={clan.id} value={clan.name}>{clan.name}</option>
+              <option key={clan.id} value={clan.id}>{clan.name}</option>
             ))}
           </select>
         </div>
@@ -182,12 +182,14 @@ const AdvancedSearch = ({ onResults }) => {
       {/* Action Buttons */}
       <div className="flex gap-3 mt-6">
         <button
+          type="button"
           onClick={applyFilters}
           className="flex-1 bg-heritage-gold hover:bg-yellow-500 text-heritage-dark font-bold py-2 px-4 rounded-lg transition"
         >
           🔎 Search
         </button>
         <button
+          type="button"
           onClick={resetFilters}
           className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg transition"
         >

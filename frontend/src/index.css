@@ -9,6 +9,8 @@
 
 /* Now we can use those variables */
 body {
+  margin: 0;
+  min-height: 100vh;
   @apply bg-heritage-cream text-gray-900;
   font-family: 'Inter', sans-serif;
 }

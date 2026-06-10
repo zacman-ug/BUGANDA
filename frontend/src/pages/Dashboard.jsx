@@ -20,13 +20,21 @@ const Dashboard = () => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const familyTreeSectionRef = React.useRef(null);
 
   const handleAdvancedSearch = (results) => {
     setFilteredIndividuals(results);
   };
 
+  const handleFamilyTreeClick = () => {
+    setView('tree');
+    window.requestAnimationFrame(() => {
+      familyTreeSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   return (
-    <Layout setView={setView} currentView={view}>
+    <Layout setView={setView} currentView={view} onFamilyTreeClick={handleFamilyTreeClick}>
       {selectedMember && (
         <MemberDetailsPanel
           member={selectedMember}
@@ -99,7 +107,7 @@ const Dashboard = () => {
           <SearchFilterBar data={individuals} onFilteredDataChange={setFilteredIndividuals} />
 
           {/* Family Tree */}
-          <div onClick={(e) => {
+          <div ref={familyTreeSectionRef} onClick={(e) => {
             // If clicked on a member node, show details
             if (e.target.closest('[data-member-id]')) {
               const memberId = e.target.closest('[data-member-id]').getAttribute('data-member-id');

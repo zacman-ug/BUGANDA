@@ -6,7 +6,7 @@ import { HeritageContext } from '../context/HeritageContext';
  * Layout Component
  * @param {Object} props - children (page content), setView (function to change pages), currentView (the active page)
  */
-const Layout = ({ children, setView, currentView }) => {
+const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
   const { user, logout, hasRole } = useContext(HeritageContext);
   const navigate = useNavigate();
 
@@ -63,7 +63,7 @@ const Layout = ({ children, setView, currentView }) => {
                   ? 'text-heritage-gold bg-gray-800 border-heritage-gold pl-4'
                   : 'text-gray-300 hover:text-heritage-gold hover:bg-gray-800 border-transparent hover:border-heritage-gold hover:pl-4'
               }`}
-              onClick={() => setView('tree')}
+              onClick={onFamilyTreeClick || (() => setView('tree'))}
             >
               <span className="text-xl group-hover:scale-110 transition-transform">🌳</span>
               <span className="font-semibold">Family Tree</span>

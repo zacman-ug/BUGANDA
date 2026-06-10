@@ -111,46 +111,47 @@ const GenerationalFamilyTree = ({ individuals = [], rootPersonId = null }) => {
       const childPos = nodePositions.get(person.id);
       if (!childPos) return;
 
-      // Connect to father
-      if (person.father_id) {
-        const fatherPos = nodePositions.get(person.father_id);
-        if (fatherPos) {
-          const midY = (fatherPos.y + childPos.y) / 2;
-          lines.push(
-            <line
-              key={`vert-${lineId++}`}
-              x1={fatherPos.x}
-              y1={fatherPos.y + NODE_RADIUS}
-              x2={fatherPos.x}
-              y2={midY}
-              stroke="#CBD5E1"
-              strokeWidth="2"
-            />
-          );
-          lines.push(
-            <line
-              key={`horiz-${lineId++}`}
-              x1={fatherPos.x}
-              y1={midY}
-              x2={childPos.x}
-              y2={midY}
-              stroke="#CBD5E1"
-              strokeWidth="2"
-            />
-          );
-          lines.push(
-            <line
-              key={`vert2-${lineId++}`}
-              x1={childPos.x}
-              y1={midY}
-              x2={childPos.x}
-              y2={childPos.y - NODE_RADIUS}
-              stroke="#CBD5E1"
-              strokeWidth="2"
-            />
-          );
-        }
-      }
+      const parentIds = [person.father_id, person.mother_id].filter(Boolean);
+
+      parentIds.forEach(parentId => {
+        const parentPos = nodePositions.get(parentId);
+        if (!parentPos) return;
+
+        const midY = (parentPos.y + childPos.y) / 2;
+        lines.push(
+          <line
+            key={`vert-${lineId++}`}
+            x1={parentPos.x}
+            y1={parentPos.y + NODE_RADIUS}
+            x2={parentPos.x}
+            y2={midY}
+            stroke="#CBD5E1"
+            strokeWidth="2"
+          />
+        );
+        lines.push(
+          <line
+            key={`horiz-${lineId++}`}
+            x1={parentPos.x}
+            y1={midY}
+            x2={childPos.x}
+            y2={midY}
+            stroke="#CBD5E1"
+            strokeWidth="2"
+          />
+        );
+        lines.push(
+          <line
+            key={`vert2-${lineId++}`}
+            x1={childPos.x}
+            y1={midY}
+            x2={childPos.x}
+            y2={childPos.y - NODE_RADIUS}
+            stroke="#CBD5E1"
+            strokeWidth="2"
+          />
+        );
+      });
     });
 
     return lines;

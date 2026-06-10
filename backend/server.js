@@ -26,7 +26,9 @@ const pool = mysql.createPool({
 
 // 2.5 Email Transporter Configuration
 const emailTransporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: Number(process.env.EMAIL_PORT || 587),
+    secure: process.env.EMAIL_SECURE === 'true',
     auth: {
         user: process.env.EMAIL_USER || 'your-email@gmail.com',
         pass: process.env.EMAIL_PASSWORD || 'your-app-password'
@@ -489,10 +491,12 @@ app.get('/api/family-tree', verifyToken, async (req, res) => {
             if (person.father_id) {
                 const father = individualsMap.get(person.father_id);
                 if (father) father.children.push(person);
-            } else if (person.mother_id) {
+            }
+            if (person.mother_id) {
                 const mother = individualsMap.get(person.mother_id);
                 if (mother) mother.children.push(person);
-            } else {
+            }
+            if (!person.father_id && !person.mother_id) {
                 roots.push(person);
             }
         });

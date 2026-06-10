@@ -55,6 +55,69 @@ const FamilyTree = ({ fullView, data }) => {
     window.print();
   };
 
+  const downloadFile = (blob, filename) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportGenerationalJPEG = async () => {
+    const treeWrapper = visualizerRef.current;
+    const svg = treeWrapper?.querySelector('svg.generational-tree-svg');
+
+    if (!svg) {
+      return;
+    }
+
+    const clonedSvg = svg.cloneNode(true);
+    clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+    const svgString = new XMLSerializer().serializeToString(clonedSvg);
+    const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    const image = new Image();
+
+    image.onload = () => {
+      const width = Number(svg.getAttribute('width')) || svg.getBoundingClientRect().width || 1400;
+      const height = Number(svg.getAttribute('height')) || svg.getBoundingClientRect().height || 1000;
+      const scale = 2;
+      const canvas = document.createElement('canvas');
+      canvas.width = width * scale;
+      canvas.height = height * scale;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        URL.revokeObjectURL(svgUrl);
+        return;
+      }
+
+      context.scale(scale, scale);
+      context.fillStyle = '#FFFFFF';
+      context.fillRect(0, 0, width, height);
+      context.drawImage(image, 0, 0, width, height);
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          downloadFile(blob, `generational_family_tree_${new Date().toISOString().split('T')[0]}.jpeg`);
+        }
+        URL.revokeObjectURL(svgUrl);
+      }, 'image/jpeg', 0.95);
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+    };
+
+    image.src = svgUrl;
+  };
+
   if (!fullView) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -86,12 +149,20 @@ const FamilyTree = ({ fullView, data }) => {
           </p>
         </div>
         {viewMode === 'generational' ? (
-          <button 
-            onClick={handlePrintGenerational}
-            className="bg-heritage-gold text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition shadow-lg font-bold flex items-center gap-2"
-          >
-            📥 Print / Save as PDF
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button 
+              onClick={handlePrintGenerational}
+              className="bg-heritage-gold text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition shadow-lg font-bold flex items-center gap-2"
+            >
+              📥 Save as PDF
+            </button>
+            <button 
+              onClick={handleExportGenerationalJPEG}
+              className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-black transition shadow-lg font-bold flex items-center gap-2"
+            >
+              🖼 Download JPEG
+            </button>
+          </div>
         ) : (
           <button 
             onClick={handlePrint}
