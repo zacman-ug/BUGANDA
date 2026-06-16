@@ -13,7 +13,7 @@ import axios from 'axios';
  * FamilyTreeVisualizer Component
  * Purpose: Displays a hierarchical family tree using React Flow
  */
-const FamilyTreeVisualizer = ({ clanFilter = null }) => {
+const FamilyTreeVisualizer = ({ clanFilter = null, individuals: providedIndividuals = null }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
@@ -25,10 +25,38 @@ const FamilyTreeVisualizer = ({ clanFilter = null }) => {
     const fetchTreeData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/family-tree');
-        const { roots, allIndividuals } = response.data;
+        let roots = [];
+        let allIndividuals = [];
 
-        // Filter by clan if specified
+        if (providedIndividuals && providedIndividuals.length > 0) {
+          allIndividuals = providedIndividuals;
+          const individualsMap = new Map();
+          allIndividuals.forEach((individual) => {
+            individualsMap.set(individual.id, { ...individual, children: [] });
+          });
+
+          individualsMap.forEach((person) => {
+            if (person.father_id && individualsMap.has(person.father_id)) {
+              individualsMap.get(person.father_id).children.push(person);
+            }
+            if (person.mother_id && individualsMap.has(person.mother_id)) {
+              individualsMap.get(person.mother_id).children.push(person);
+            }
+            if (!person.father_id && !person.mother_id) {
+              roots.push(person);
+            }
+          });
+
+          if (roots.length === 0) {
+            roots = Array.from(individualsMap.values());
+          }
+        } else {
+          const response = await axios.get('/api/family-tree');
+          const treeData = response.data;
+          roots = treeData.roots;
+          allIndividuals = treeData.allIndividuals;
+        }
+
         const filteredIndividuals = clanFilter
           ? allIndividuals.filter(ind => ind.clan_id === clanFilter)
           : allIndividuals;
@@ -134,7 +162,7 @@ const FamilyTreeVisualizer = ({ clanFilter = null }) => {
     };
 
     fetchTreeData();
-  }, [clanFilter, setNodes, setEdges]);
+  }, [clanFilter, providedIndividuals, setNodes, setEdges]);
 
   const handleNodeClick = useCallback((event, node) => {
     setSelectedNode(node.data.individual);

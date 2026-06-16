@@ -139,26 +139,26 @@ const FamilyTree = ({ fullView, data }) => {
   }
 
   return (
-    <div className="p-4 family-tree-container">
+    <div className="p-3 sm:p-4 family-tree-container w-full">
       {/* Header Section */}
-      <div className="flex justify-between items-center mb-6 print:hidden">
+      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 print:hidden">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 font-serif">Visual Lineage Tree</h2>
-          <p className="text-sm text-gray-500">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 font-serif">Visual Lineage Tree</h2>
+          <p className="text-xs sm:text-sm text-gray-500">
             {viewMode === 'generational' ? 'Generational Family Tree' : 'Organized by generational flow'}
           </p>
         </div>
         {viewMode === 'generational' ? (
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
             <button 
               onClick={handlePrintGenerational}
-              className="bg-heritage-gold text-white px-6 py-2 rounded-lg hover:bg-yellow-600 transition shadow-lg font-bold flex items-center gap-2"
+              className="w-full sm:w-auto bg-heritage-gold text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-yellow-600 transition shadow-lg font-bold flex items-center justify-center gap-2"
             >
               📥 Save as PDF
             </button>
             <button 
               onClick={handleExportGenerationalJPEG}
-              className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-black transition shadow-lg font-bold flex items-center gap-2"
+              className="w-full sm:w-auto bg-gray-800 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-black transition shadow-lg font-bold flex items-center justify-center gap-2"
             >
               🖼 Download JPEG
             </button>
@@ -166,7 +166,7 @@ const FamilyTree = ({ fullView, data }) => {
         ) : (
           <button 
             onClick={handlePrint}
-            className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition shadow-lg font-bold"
+            className="w-full sm:w-auto bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-800 transition shadow-lg font-bold"
           >
             Print / Save as PDF
           </button>
@@ -174,11 +174,11 @@ const FamilyTree = ({ fullView, data }) => {
       </div>
 
       {/* View Mode and Clan Selection Controls */}
-      <div className="mb-6 print:hidden flex flex-col md:flex-row gap-4 items-start md:items-center">
-        <div className="flex gap-2 flex-wrap">
+      <div className="mb-6 print:hidden flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+        <div className="flex flex-col sm:flex-row gap-2 flex-wrap w-full">
           <button
             onClick={handleTreeViewClick}
-            className={`px-4 py-2 rounded-lg font-bold transition ${
+            className={`w-full sm:w-auto px-4 py-2 rounded-lg font-bold transition ${
               viewMode === 'visualizer'
                 ? 'bg-heritage-gold text-white'
                 : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -188,7 +188,7 @@ const FamilyTree = ({ fullView, data }) => {
           </button>
           <button
             onClick={() => setViewMode('generational')}
-            className={`px-4 py-2 rounded-lg font-bold transition ${
+            className={`w-full sm:w-auto px-4 py-2 rounded-lg font-bold transition ${
               viewMode === 'generational'
                 ? 'bg-heritage-gold text-white'
                 : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -198,7 +198,7 @@ const FamilyTree = ({ fullView, data }) => {
           </button>
           <button
             onClick={() => setViewMode('cards')}
-            className={`px-4 py-2 rounded-lg font-bold transition ${
+            className={`w-full sm:w-auto px-4 py-2 rounded-lg font-bold transition ${
               viewMode === 'cards'
                 ? 'bg-heritage-gold text-white'
                 : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -212,7 +212,7 @@ const FamilyTree = ({ fullView, data }) => {
           <select
             value={selectedClan || ''}
             onChange={(e) => setSelectedClan(e.target.value ? parseInt(e.target.value) : null)}
-            className="px-4 py-2 rounded-lg border border-gray-300 bg-white"
+            className="w-full md:w-auto px-4 py-2 rounded-lg border border-gray-300 bg-white"
           >
             <option value="">All Clans</option>
             {clanOptions.map(clan => (
@@ -226,20 +226,20 @@ const FamilyTree = ({ fullView, data }) => {
 
       {/* Visualization Area */}
       {viewMode === 'visualizer' ? (
-        <div ref={visualizerRef} className="bg-white rounded-xl shadow-lg overflow-hidden" style={{ height: '600px' }}>
-          <FamilyTreeVisualizer clanFilter={selectedClan} />
+        <div ref={visualizerRef} className="bg-white rounded-xl shadow-lg overflow-hidden" style={{ height: 'min(70vh, 600px)' }}>
+          <FamilyTreeVisualizer clanFilter={selectedClan} individuals={selectedClan ? individuals.filter(i => i.clan_id === selectedClan) : individuals} />
         </div>
       ) : viewMode === 'generational' ? (
-        <div ref={visualizerRef} className="bg-white rounded-xl shadow-lg overflow-hidden generational-tree-wrapper">
+        <div ref={visualizerRef} className="bg-white rounded-xl shadow-lg overflow-hidden generational-tree-wrapper max-h-[75vh] overflow-auto">
           <GenerationalFamilyTree individuals={selectedClan ? individuals.filter(i => i.clan_id === selectedClan) : individuals} />
         </div>
       ) : (
-        <div className="bg-white p-10 rounded-xl shadow-inner border-2 border-heritage-gold">
+        <div className="bg-white p-4 sm:p-6 lg:p-10 rounded-xl shadow-inner border-2 border-heritage-gold overflow-hidden">
           <div className="flex flex-col items-center">
             
             {/* Root: Ancestor / Clan Concept */}
-            <div className="bg-heritage-dark text-heritage-gold px-8 py-4 rounded-lg shadow-xl mb-12 border-2 border-heritage-gold text-center">
-              <h3 className="text-xl font-bold uppercase tracking-widest">Clan Head / Patriarch</h3>
+            <div className="bg-heritage-dark text-heritage-gold px-6 sm:px-8 py-4 rounded-lg shadow-xl mb-10 sm:mb-12 border-2 border-heritage-gold text-center max-w-full">
+              <h3 className="text-lg sm:text-xl font-bold uppercase tracking-widest">Clan Head / Patriarch</h3>
               <p className="text-xs opacity-80">Origin of Lineage</p>
             </div>
 
