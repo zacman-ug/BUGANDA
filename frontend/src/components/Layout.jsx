@@ -48,9 +48,9 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
   };
 
   return (
-    <div className="min-h-screen bg-heritage-cream flex">
+    <div className="min-h-screen bg-heritage-cream flex flex-col lg:flex-row overflow-x-hidden">
       {/* Sidebar Navigation */}
-      <nav className="w-64 bg-gradient-to-b from-heritage-dark via-gray-900 to-black text-white p-6 shadow-2xl fixed h-full flex flex-col justify-between border-r-4 border-heritage-gold">
+      <nav className="w-full lg:w-64 bg-gradient-to-b from-heritage-dark via-gray-900 to-black text-white p-4 sm:p-6 shadow-2xl lg:fixed lg:inset-y-0 lg:left-0 flex flex-col justify-between border-r-4 border-heritage-gold lg:h-full">
         {/* Header with decorative element */}
         <div>
           <div className="relative mb-10">
@@ -170,8 +170,8 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
       </nav>
 
       {/* Main Content Area */}
-      <main className="flex-1 ml-64 p-10 min-h-screen">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 min-h-screen p-4 sm:p-6 lg:p-10 lg:ml-64 w-full">
+        <div className="max-w-6xl mx-auto w-full">
           {children}
         </div>
       </main>
