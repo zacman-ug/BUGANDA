@@ -4,7 +4,7 @@ import { HeritageContext } from '../context/HeritageContext';
 import { useToast } from './Toast';
 
 const AddMemberForm = () => {
-  const { fetchHeritageData, individuals } = useContext(HeritageContext);
+  const { fetchHeritageData, individuals, canCreateRecord } = useContext(HeritageContext);
   const { show: showToast, ToastContainer } = useToast();
 
   const [clans, setClans] = useState([]);
@@ -139,6 +139,11 @@ const AddMemberForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!canCreateRecord()) {
+      showToast('⚠️ You do not have permission to add records', 'error');
+      return;
+    }
     
     if (!validateForm()) {
       showToast('Please fix the errors below', 'error');
@@ -245,7 +250,7 @@ const AddMemberForm = () => {
               >
                 <option value="">🏛️ Select Clan...</option>
                 {clans.map(clan => (
-                  <option key={clan.id} value={clan.id}>{clan.name}</option>
+                  <option key={clan.id} value={clan.id}>{clan.display_name || clan.name}</option>
                 ))}
               </select>
               {errors.clan_id && <p className="text-red-500 text-sm mt-1">⚠ {errors.clan_id}</p>}
@@ -509,7 +514,7 @@ const AddMemberForm = () => {
                   >
                     <option value="">🏛️ Select Clan...</option>
                     {clans.map(clan => (
-                      <option key={clan.id} value={clan.id}>{clan.name}</option>
+                      <option key={clan.id} value={clan.id}>{clan.display_name || clan.name}</option>
                     ))}
                   </select>
                   {spouseErrors.clan_id && <p className="text-red-500 text-sm mt-1">⚠ {spouseErrors.clan_id}</p>}

@@ -140,7 +140,7 @@ const AdvancedSearch = ({ onResults }) => {
           >
             <option value="">All Clans</option>
             {clanOptions.map(clan => (
-              <option key={clan.id} value={clan.id}>{clan.name}</option>
+              <option key={clan.id} value={clan.id}>{clan.display_name || clan.name}</option>
             ))}
           </select>
         </div>

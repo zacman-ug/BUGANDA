@@ -120,7 +120,7 @@ const ClanDirectory = () => {
                         selectedClan?.id === clan.id ? 'bg-heritage-gold/20 border-l-4 border-heritage-gold' : ''
                       }`}
                     >
-                      <p className="font-semibold text-heritage-dark">{clan.name}</p>
+                      <p className="font-semibold text-heritage-dark">{clan.display_name || clan.name}</p>
                       <p className="text-sm text-gray-600 mt-1">👥 {clan.memberCount} members</p>
                     </button>
                   ))
@@ -141,7 +141,7 @@ const ClanDirectory = () => {
                 <div className="bg-gradient-to-r from-heritage-dark to-black text-white p-8">
                   <div className="flex items-start justify-between">
                     <div>
-                      <h2 className="text-4xl font-bold font-serif mb-2">{selectedClan.name}</h2>
+                      <h2 className="text-4xl font-bold font-serif mb-2">{selectedClan.display_name || selectedClan.name}</h2>
                       {selectedClan.totem && (
                         <p className="text-heritage-gold text-lg">Totem: {selectedClan.totem}</p>
                       )}
@@ -167,7 +167,7 @@ const ClanDirectory = () => {
                 {/* Members List */}
                 <div className="p-8">
                   <h3 className="font-bold text-xl text-heritage-dark mb-4 flex items-center gap-2">
-                    <span>👥</span> Members of {selectedClan.name}
+                    <span>👥</span> Members of {selectedClan.display_name || selectedClan.name}
                   </h3>
                   <div className="space-y-3">
                     {selectedClan.members && selectedClan.members.length > 0 ? (

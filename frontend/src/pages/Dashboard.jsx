@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import Layout from '../components/Layout';
 import FamilyTree from './FamilyTree';
 import AddMemberForm from '../components/AddMemberForm';
@@ -8,19 +8,28 @@ import AdvancedSearch from '../components/AdvancedSearch';
 import DataExportPanel from '../components/DataExportPanel';
 import MemberDetailsPanel from '../components/MemberDetailsPanel';
 import { HeritageContext } from '../context/HeritageContext';
+import { useSearchParams } from 'react-router-dom';
 
 /**
  * Dashboard Component
  * Main dashboard with navigation and features
  */
 const Dashboard = () => {
-  const [view, setView] = useState('tree');
-  const { individuals } = useContext(HeritageContext);
+  const [searchParams] = useSearchParams();
+  const [view, setView] = useState(() => searchParams.get('view') === 'add' ? 'add' : 'tree');
+  const { individuals, canCreateRecord } = useContext(HeritageContext);
   const [filteredIndividuals, setFilteredIndividuals] = useState(individuals);
   const [selectedMember, setSelectedMember] = useState(null);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const familyTreeSectionRef = React.useRef(null);
+
+  useEffect(() => {
+    const viewParam = searchParams.get('view');
+    if (viewParam === 'add' || viewParam === 'tree') {
+      setView(viewParam);
+    }
+  }, [searchParams]);
 
   const handleAdvancedSearch = (results) => {
     setFilteredIndividuals(results);
@@ -118,9 +127,16 @@ const Dashboard = () => {
             <FamilyTree fullView={true} data={filteredIndividuals} />
           </div>
         </div>
-      ) : (
+      ) : canCreateRecord() ? (
         <div className="animate-in slide-in-from-bottom-4 duration-500">
           <AddMemberForm />
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-red-200">
+          <h2 className="text-2xl font-bold text-red-700 mb-3">Access restricted</h2>
+          <p className="text-gray-700">
+            Your role does not allow adding records.
+          </p>
         </div>
       )}
     </Layout>

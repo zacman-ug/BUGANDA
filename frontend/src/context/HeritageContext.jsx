@@ -15,10 +15,30 @@ export const HeritageProvider = ({ children }) => {
     return stored ? JSON.parse(stored) : null;
   });
 
+  // Keep the cached user profile aligned with the database role.
+  const syncUserProfile = async (authToken) => {
+    if (!authToken) return;
+
+    try {
+      const response = await axios.get('/api/auth/profile', {
+        headers: {
+          Authorization: `Bearer ${authToken}`
+        }
+      });
+
+      const currentUser = response.data;
+      setUser(currentUser);
+      localStorage.setItem('user', JSON.stringify(currentUser));
+    } catch (error) {
+      console.error('Error syncing authenticated user profile:', error);
+    }
+  };
+
   // Set axios default headers with token
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      syncUserProfile(token);
     } else {
       delete axios.defaults.headers.common['Authorization'];
     }

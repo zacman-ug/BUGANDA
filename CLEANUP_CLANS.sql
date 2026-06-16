@@ -1,34 +1,24 @@
--- Buganda Heritage Database Schema with User Authentication
--- Run these SQL commands in your MySQL database
+-- Clan cleanup and normalization
+-- Rebuilds the clans table using the canonical Luganda list from the repo seed.
+-- Preserves existing individual clan links where they match the legacy table.
 
--- 1. CREATE USERS TABLE
-CREATE TABLE IF NOT EXISTS users (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  full_name VARCHAR(255) NOT NULL,
-  email VARCHAR(255) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  phone VARCHAR(20),
-  bio TEXT,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+USE buganda_heritage;
 
--- 2. UPDATE INDIVIDUALS TABLE TO LINK TO USERS
--- Add user_id column if it doesn't exist
-ALTER TABLE individuals ADD COLUMN user_id INT;
-ALTER TABLE individuals ADD FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
+START TRANSACTION;
 
--- 3. CREATE CLANS TABLE (if not exists)
-CREATE TABLE IF NOT EXISTS clans (
+SET @old_fk_checks = @@FOREIGN_KEY_CHECKS;
+SET FOREIGN_KEY_CHECKS = 0;
+SET @old_safe_updates = @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
+
+DROP TEMPORARY TABLE IF EXISTS canonical_clans;
+CREATE TEMPORARY TABLE canonical_clans (
   id INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(100) NOT NULL UNIQUE,
-  description TEXT,
-  totem VARCHAR(100),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  totem VARCHAR(100)
 );
 
--- Clan data used by the app's /api/clans endpoint
-INSERT INTO clans (name, totem) VALUES
+INSERT INTO canonical_clans (name, totem) VALUES
 ('Abalangira', 'Tewali muziro (Royal Clan)'),
 ('Abalangira b''Essanje', 'Essanje'),
 ('Ababiito b''Ekooki', 'Mazzi ga Kisasi'),
@@ -83,11 +73,34 @@ INSERT INTO clans (name, totem) VALUES
 ('Ndiisa', 'Ndiisa'),
 ('Nkebuka', 'Nkebuka'),
 ('Kasanke', 'Kasanke'),
-('Kibuba', 'Kibuba')
-AS new_clans
-ON DUPLICATE KEY UPDATE totem = new_clans.totem;
+('Kibuba', 'Kibuba');
 
--- 4. VERIFY STRUCTURE
-DESCRIBE users;
-DESCRIBE individuals;
-DESCRIBE clans;
+DROP TEMPORARY TABLE IF EXISTS clan_alias_map;
+CREATE TEMPORARY TABLE clan_alias_map (
+  old_name VARCHAR(100) PRIMARY KEY,
+  canonical_name VARCHAR(100) NOT NULL
+);
+
+INSERT INTO clan_alias_map (old_name, canonical_name) VALUES
+('Buffalo', 'Mbogo');
+
+UPDATE individuals i
+JOIN clans legacy_clan ON i.clan_id = legacy_clan.id
+LEFT JOIN clan_alias_map alias_map ON alias_map.old_name = legacy_clan.name
+JOIN canonical_clans canonical_clan ON canonical_clan.name = COALESCE(alias_map.canonical_name, legacy_clan.name)
+SET i.clan_id = canonical_clan.id;
+
+DELETE FROM clans;
+
+INSERT INTO clans (id, name, totem, head_title)
+SELECT id, name, totem, NULL
+FROM canonical_clans
+ORDER BY id;
+
+ALTER TABLE clans AUTO_INCREMENT = 55;
+
+SET SQL_SAFE_UPDATES = @old_safe_updates;
+SET FOREIGN_KEY_CHECKS = @old_fk_checks;
+COMMIT;
+
+SELECT COUNT(*) AS clan_count FROM clans;

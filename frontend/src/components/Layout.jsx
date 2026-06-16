@@ -7,12 +7,44 @@ import { HeritageContext } from '../context/HeritageContext';
  * @param {Object} props - children (page content), setView (function to change pages), currentView (the active page)
  */
 const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
-  const { user, logout, hasRole } = useContext(HeritageContext);
+  const { user, logout, hasRole, canCreateRecord, canManageUsers } = useContext(HeritageContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleDashboardClick = () => {
+    if (setView) {
+      setView('tree');
+      return;
+    }
+
+    navigate('/dashboard?view=tree');
+  };
+
+  const handleFamilyTreeClick = () => {
+    if (onFamilyTreeClick) {
+      onFamilyTreeClick();
+      return;
+    }
+
+    if (setView) {
+      setView('tree');
+      return;
+    }
+
+    navigate('/dashboard?view=tree');
+  };
+
+  const handleAddRecordClick = () => {
+    if (setView) {
+      setView('add');
+      return;
+    }
+
+    navigate('/dashboard?view=add');
   };
 
   return (
@@ -50,7 +82,7 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
                   ? 'text-heritage-gold bg-gray-800 border-heritage-gold pl-4'
                   : 'text-gray-300 hover:text-heritage-gold hover:bg-gray-800 border-transparent hover:border-heritage-gold hover:pl-4'
               }`}
-              onClick={() => setView('tree')}
+              onClick={handleDashboardClick}
             >
               <span className="text-xl group-hover:scale-110 transition-transform">📊</span>
               <span className="font-semibold">Dashboard</span>
@@ -63,24 +95,26 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
                   ? 'text-heritage-gold bg-gray-800 border-heritage-gold pl-4'
                   : 'text-gray-300 hover:text-heritage-gold hover:bg-gray-800 border-transparent hover:border-heritage-gold hover:pl-4'
               }`}
-              onClick={onFamilyTreeClick || (() => setView('tree'))}
+              onClick={handleFamilyTreeClick}
             >
               <span className="text-xl group-hover:scale-110 transition-transform">🌳</span>
               <span className="font-semibold">Family Tree</span>
             </li>
 
             {/* Add Record Link */}
-            <li
-              className={`flex items-center space-x-3 cursor-pointer transition-all duration-200 p-3 rounded-lg group border-l-4 ${
-                currentView === 'add'
-                  ? 'text-heritage-gold bg-gray-800 border-heritage-gold pl-4'
-                  : 'text-gray-300 hover:text-heritage-gold hover:bg-gray-800 border-transparent hover:border-heritage-gold hover:pl-4'
-              }`}
-              onClick={() => setView('add')}
-            >
-              <span className="text-xl group-hover:scale-110 transition-transform">➕</span>
-              <span className="font-semibold">Add Record</span>
-            </li>
+            {canCreateRecord() && (
+              <li
+                className={`flex items-center space-x-3 cursor-pointer transition-all duration-200 p-3 rounded-lg group border-l-4 ${
+                  currentView === 'add'
+                    ? 'text-heritage-gold bg-gray-800 border-heritage-gold pl-4'
+                    : 'text-gray-300 hover:text-heritage-gold hover:bg-gray-800 border-transparent hover:border-heritage-gold hover:pl-4'
+                }`}
+                onClick={handleAddRecordClick}
+              >
+                <span className="text-xl group-hover:scale-110 transition-transform">➕</span>
+                <span className="font-semibold">Add Record</span>
+              </li>
+            )}
 
             {/* Clan Directory Link */}
             <li>
@@ -110,7 +144,7 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
             </p>
           </div>
 
-          {hasRole('admin') && (
+          {canManageUsers() && (
             <Link
               to="/admin"
               className="block w-full text-center bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition text-sm"

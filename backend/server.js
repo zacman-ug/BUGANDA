@@ -35,6 +35,108 @@ const emailTransporter = nodemailer.createTransport({
     }
 });
 
+const CLAN_NAME_ALIASES = {
+    'Abalangira (Royal Clan)': 'Abalangira',
+    'Babiito–Kooki': 'Babiito Kooki',
+    'Babiito–Kibulala': 'Babiito Kibulala',
+    'Babiito–Kiziba': 'Babiito Kiziba',
+    'Ŋŋaali (Ngaali)': 'Ŋŋaali',
+    'Ŋŋonge (Ngonge)': 'Ŋŋonge'
+};
+
+const CANONICAL_CLAN_NAMES = [
+    'Abalangira',
+    'Babiito Kooki',
+    'Babiito Kibulala',
+    'Babiito Kiziba',
+    'Butiko',
+    'Ffumbe',
+    'Kasanke',
+    'Kasimba',
+    'Kayozi',
+    'Kibe',
+    'Kibuba',
+    'Kinyomo',
+    'Kiwere',
+    'Kkobe',
+    'Lugave',
+    'Lukato',
+    'Mazzi ga Kisasi',
+    'Mbogo',
+    'Mbuzi',
+    'Mbwa',
+    'Mmamba Gabunga',
+    'Mmamba Kakoboza',
+    'Mpeewo',
+    'Mpindi',
+    'Mpologoma',
+    'Musu',
+    'Mutima Musagi',
+    'Mutima Omuyanja',
+    'Nakinsige',
+    'Ndiga',
+    'Ndiisa',
+    'Ngabi Nnyunga',
+    'Ngabi Nsamba',
+    'Ngeye',
+    'Ngo',
+    'Njaza',
+    'Njovu',
+    'Nkebuka',
+    'Nkejje',
+    'Nkerebwe',
+    'Nkima',
+    'Nkula',
+    'Namuŋŋoona',
+    'Nnyonyi Nnyange',
+    'Nseenene',
+    'Nsuma',
+    'Nsunu',
+    'Nswaswa',
+    'Ntalaganya',
+    'Nte',
+    'Nvubu',
+    'Nvuma',
+    'Ŋŋaali',
+    'Ŋŋonge'
+];
+
+const normalizeClanName = (name) => CLAN_NAME_ALIASES[name] || name;
+
+const normalizeClanRecord = (clan) => {
+    if (!clan) return clan;
+    const displayName = normalizeClanName(clan.name);
+    return {
+        ...clan,
+        name: displayName,
+        display_name: displayName
+    };
+};
+
+const normalizeIndividualClanNames = (person) => {
+    if (!person) return person;
+    return {
+        ...person,
+        clan_name: normalizeClanName(person.clan_name),
+        spouse_clan_name: normalizeClanName(person.spouse_clan_name)
+    };
+};
+
+const buildCanonicalClanList = (rows) => {
+    const clanMap = new Map();
+
+    rows.forEach((clan) => {
+        const displayName = normalizeClanName(clan.name);
+        if (!clanMap.has(displayName)) {
+            clanMap.set(displayName, normalizeClanRecord(clan));
+        }
+    });
+
+    return CANONICAL_CLAN_NAMES
+        .map((name) => clanMap.get(name))
+        .filter(Boolean);
+};
+
 // Verify email configuration on startup
 emailTransporter.verify((error, success) => {
     if (error) {
@@ -70,6 +172,10 @@ const verifyRole = (allowedRoles) => {
         }
         next();
     };
+};
+
+const canCreateRecord = (req, res, next) => {
+    return verifyRole(['admin', 'contributor', 'moderator'])(req, res, next);
 };
 
 // 5. Authentication Endpoints
@@ -383,7 +489,7 @@ app.get('/api/individuals', verifyToken, async (req, res) => {
             WHERE i.user_id = ?
             ORDER BY i.full_name ASC
         `, [req.userId]);
-        res.json(rows);
+        res.json(rows.map(normalizeIndividualClanNames));
     } catch (err) {
         console.error("Database Error:", err);
         res.status(500).json({ error: "Failed to fetch heritage data" });
@@ -394,7 +500,7 @@ app.get('/api/individuals', verifyToken, async (req, res) => {
  * POST /api/individuals
  * Purpose: Receives new member data from the frontend form and saves it to MySQL (user-specific)
  */
-app.post('/api/individuals', verifyToken, async (req, res) => {
+app.post('/api/individuals', verifyToken, canCreateRecord, async (req, res) => {
     const {
         full_name, gender, clan_id, father_id, mother_id, bio,
         date_of_birth, date_of_death, spouse_id, occupation, residence, alternative_name
@@ -460,8 +566,8 @@ app.post('/api/individuals', verifyToken, async (req, res) => {
  */
 app.get('/api/clans', async (req, res) => {
     try {
-        const [clans] = await pool.query('SELECT * FROM clans');
-        res.json(clans);
+        const [clans] = await pool.query('SELECT id, name, totem, created_at FROM clans ORDER BY id ASC');
+        res.json(buildCanonicalClanList(clans));
     } catch (err) {
         console.error('Clans Error:', err);
         res.status(500).json({ error: "Could not load clans" });
@@ -481,8 +587,10 @@ app.get('/api/family-tree', verifyToken, async (req, res) => {
             WHERE i.user_id = ?
         `, [req.userId]);
 
+        const normalizedIndividuals = individuals.map(normalizeIndividualClanNames);
+
         const individualsMap = new Map();
-        individuals.forEach(ind => {
+        normalizedIndividuals.forEach(ind => {
             individualsMap.set(ind.id, { ...ind, children: [] });
         });
 
@@ -504,7 +612,7 @@ app.get('/api/family-tree', verifyToken, async (req, res) => {
         res.json({
             roots: roots,
             allIndividuals: Array.from(individualsMap.values()),
-            total: individuals.length
+            total: normalizedIndividuals.length
         });
     } catch (err) {
         console.error("Database Error:", err);
@@ -527,11 +635,13 @@ app.get('/api/individuals/:id/lineage', verifyToken, async (req, res) => {
             WHERE i.id = ? AND i.user_id = ?
         `, [id, req.userId]);
 
-        if (individual.length === 0) {
+        const normalizedIndividual = individual.map(normalizeIndividualClanNames);
+
+        if (normalizedIndividual.length === 0) {
             return res.status(404).json({ error: "Individual not found" });
         }
 
-        const person = individual[0];
+        const person = normalizedIndividual[0];
 
         let parents = { father: null, mother: null };
         if (person.father_id || person.mother_id) {
@@ -542,7 +652,9 @@ app.get('/api/individuals/:id/lineage', verifyToken, async (req, res) => {
                 WHERE i.user_id = ? AND i.id IN (?, ?)
             `, [req.userId, person.father_id, person.mother_id]);
 
-            parentData.forEach(p => {
+            const normalizedParentData = parentData.map(normalizeIndividualClanNames);
+
+            normalizedParentData.forEach(p => {
                 if (p.id === person.father_id) parents.father = p;
                 if (p.id === person.mother_id) parents.mother = p;
             });
@@ -558,7 +670,7 @@ app.get('/api/individuals/:id/lineage', verifyToken, async (req, res) => {
         res.json({
             person,
             parents,
-            children: descendants
+            children: descendants.map(normalizeIndividualClanNames)
         });
     } catch (err) {
         console.error("Database Error:", err);
@@ -680,7 +792,7 @@ app.delete('/api/admin/users/:id', verifyToken, verifyRole(['admin']), async (re
  * GET /api/admin/roles
  * Purpose: Get all available roles (authenticated users)
  */
-app.get('/api/admin/roles', verifyToken, async (req, res) => {
+app.get('/api/admin/roles', verifyToken, verifyRole(['admin']), async (req, res) => {
     try {
         const [roles] = await pool.execute('SELECT name, description FROM roles');
         res.json(roles);
@@ -694,7 +806,7 @@ app.get('/api/admin/roles', verifyToken, async (req, res) => {
  * GET /api/admin/permissions
  * Purpose: Get all permissions for a role (authenticated users)
  */
-app.get('/api/admin/permissions/:role', verifyToken, async (req, res) => {
+app.get('/api/admin/permissions/:role', verifyToken, verifyRole(['admin']), async (req, res) => {
     const { role } = req.params;
 
     try {
