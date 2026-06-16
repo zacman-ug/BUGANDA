@@ -566,10 +566,15 @@ app.post('/api/individuals', verifyToken, canCreateRecord, async (req, res) => {
  * GET /api/clans
  * Purpose: Returns a list of all clans (for the dropdown menu in the form).
  */
+// To this updated code:
 app.get('/api/clans', async (req, res) => {
     try {
         const [clans] = await pool.query('SELECT id, name, totem, created_at FROM clans ORDER BY id ASC');
-        res.json(buildCanonicalClanList(clans));
+        
+        // Map through rows to normalize special character aliases (like Ngaali or Ngonge)
+        const normalizedClans = clans.map(normalizeClanRecord);
+        
+        res.json(normalizedClans); // <-- Sends all 55 clans from the database directly
     } catch (err) {
         console.error('Clans Error:', err);
         res.status(500).json({ error: "Could not load clans" });
