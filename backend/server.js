@@ -16,12 +16,14 @@ app.use(express.json());
 
 // 2. Database Connection Pool 
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'buganda_heritage',
-    waitForConnections: true,
-    connectionLimit: 10
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    port: process.env.DB_PORT,
+    ssl: {
+        rejectUnauthorized: false // This bypasses local CA certificate checks for managed cloud hosting
+    }
 });
 
 // 2.5 Email Transporter Configuration
