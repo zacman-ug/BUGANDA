@@ -3,7 +3,7 @@ import axios from 'axios';
 import { HeritageContext } from '../context/HeritageContext';
 import { useToast } from './Toast';
 
-const AddMemberForm = () => {
+const AddMemberForm = ({ editingMember, onCancel }) => {
   const { fetchHeritageData, individuals, canCreateRecord } = useContext(HeritageContext);
   const { show: showToast, ToastContainer } = useToast();
 
@@ -46,6 +46,26 @@ const AddMemberForm = () => {
     };
     fetchClans();
   }, [showToast]);
+
+  // Prefill form when editingMember is provided
+  useEffect(() => {
+    if (editingMember) {
+      setFormData({
+        full_name: editingMember.full_name || '',
+        gender: editingMember.gender || 'Male',
+        clan_id: editingMember.clan_id ? String(editingMember.clan_id) : '',
+        father_id: editingMember.father_id ? String(editingMember.father_id) : '',
+        mother_id: editingMember.mother_id ? String(editingMember.mother_id) : '',
+        bio: editingMember.bio || '',
+        date_of_birth: editingMember.date_of_birth || '',
+        date_of_death: editingMember.date_of_death || '',
+        spouse_id: editingMember.spouse_id ? String(editingMember.spouse_id) : '',
+        occupation: editingMember.occupation || '',
+        residence: editingMember.residence || '',
+        alternative_name: editingMember.alternative_name || ''
+      });
+    }
+  }, [editingMember]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -144,7 +164,7 @@ const AddMemberForm = () => {
       showToast('⚠️ You do not have permission to add records', 'error');
       return;
     }
-    
+
     if (!validateForm()) {
       showToast('Please fix the errors below', 'error');
       return;
@@ -152,26 +172,32 @@ const AddMemberForm = () => {
 
     setIsLoading(true);
     try {
-      await axios.post('/api/individuals', formData);
-      
-      fetchHeritageData();
-      showToast('✓ Ancestral record preserved successfully!', 'success');
-      
-      setFormData({
-        full_name: '',
-        gender: 'Male',
-        clan_id: '',
-        father_id: '',
-        mother_id: '',
-        bio: '',
-        date_of_birth: '',
-        date_of_death: '',
-        spouse_id: '',
-        occupation: '',
-        residence: '',
-        alternative_name: ''
-      });
-      setErrors({});
+      if (editingMember) {
+        await axios.put(`/api/individuals/${editingMember.id}`, formData);
+        await fetchHeritageData();
+        showToast('✓ Member updated successfully!', 'success');
+        if (onCancel) onCancel();
+      } else {
+        await axios.post('/api/individuals', formData);
+        await fetchHeritageData();
+        showToast('✓ Ancestral record preserved successfully!', 'success');
+
+        setFormData({
+          full_name: '',
+          gender: 'Male',
+          clan_id: '',
+          father_id: '',
+          mother_id: '',
+          bio: '',
+          date_of_birth: '',
+          date_of_death: '',
+          spouse_id: '',
+          occupation: '',
+          residence: '',
+          alternative_name: ''
+        });
+        setErrors({});
+      }
     } catch (err) {
       console.error('Error:', err);
       showToast('Error saving record. Please try again.', 'error');
@@ -179,6 +205,7 @@ const AddMemberForm = () => {
       setIsLoading(false);
     }
   };
+  
 
   return (
     <div className="max-w-3xl mx-auto animate-slide-up">

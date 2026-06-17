@@ -220,7 +220,15 @@ const GenerationalFamilyTree = ({ individuals = [], rootPersonId = null }) => {
             }}
             onMouseEnter={() => setHoveredNode(person.id)}
             onMouseLeave={() => setHoveredNode(null)}
-            onClick={() => setSelectedNode(isSelected ? null : person)}
+            onClick={() => {
+              const newSel = isSelected ? null : person;
+              setSelectedNode(newSel);
+              if (newSel) {
+                try {
+                  window.dispatchEvent(new CustomEvent('member:selected', { detail: person.id }));
+                } catch (e) {}
+              }
+            }}
           />
 
           {/* Gender symbol inside circle */}

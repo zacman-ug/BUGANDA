@@ -166,6 +166,11 @@ const FamilyTreeVisualizer = ({ clanFilter = null, individuals: providedIndividu
 
   const handleNodeClick = useCallback((event, node) => {
     setSelectedNode(node.data.individual);
+    try {
+      window.dispatchEvent(new CustomEvent('member:selected', { detail: node.data.individual.id }));
+    } catch (e) {
+      // ignore
+    }
   }, []);
 
   if (loading) {

@@ -20,6 +20,7 @@ const Dashboard = () => {
   const { individuals, canCreateRecord } = useContext(HeritageContext);
   const [filteredIndividuals, setFilteredIndividuals] = useState(individuals);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [editingMember, setEditingMember] = useState(null);
   const [showExportPanel, setShowExportPanel] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const familyTreeSectionRef = React.useRef(null);
@@ -42,6 +43,17 @@ const Dashboard = () => {
     });
   };
 
+  // Listen for global member selected events from tree visualizers
+  useEffect(() => {
+    const handler = (e) => {
+      const id = Number(e.detail);
+      const member = individuals.find(p => p.id === id);
+      if (member) setSelectedMember(member);
+    };
+    window.addEventListener('member:selected', handler);
+    return () => window.removeEventListener('member:selected', handler);
+  }, [individuals]);
+
   return (
     <Layout setView={setView} currentView={view} onFamilyTreeClick={handleFamilyTreeClick}>
       {selectedMember && (
@@ -49,8 +61,9 @@ const Dashboard = () => {
           member={selectedMember}
           individuals={individuals}
           onClose={() => setSelectedMember(null)}
-          onEdit={() => {
-            // TODO: Implement edit functionality
+          onEdit={(m) => {
+            setEditingMember(m);
+            setView('add');
             setSelectedMember(null);
           }}
         />
@@ -88,7 +101,10 @@ const Dashboard = () => {
               <span className="relative z-10 group-hover:text-blue-600 transition-colors duration-300">🔍 Search</span>
             </button>
             <button
-              onClick={() => setView(view === 'tree' ? 'add' : 'tree')}
+              onClick={() => {
+                if (view === 'tree') setEditingMember(null);
+                setView(view === 'tree' ? 'add' : 'tree');
+              }}
               className="relative overflow-hidden w-full sm:w-auto bg-gradient-to-r from-heritage-gold via-yellow-400 to-heritage-bronze text-heritage-dark px-8 py-3 rounded-2xl font-bold text-base sm:text-lg shadow-heritage-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 sm:whitespace-nowrap group before:absolute before:top-0 before:left-0 before:w-full before:h-full before:bg-gradient-to-r before:from-heritage-dark before:to-black before:translate-y-full hover:before:translate-y-0 before:transition-transform before:duration-300"
             >
               <span className="relative z-10 group-hover:text-heritage-gold transition-colors duration-300 flex items-center gap-2">
@@ -129,7 +145,13 @@ const Dashboard = () => {
         </div>
       ) : canCreateRecord() ? (
         <div className="animate-in slide-in-from-bottom-4 duration-500">
-          <AddMemberForm />
+          <AddMemberForm
+            editingMember={editingMember}
+            onCancel={() => {
+              setEditingMember(null);
+              setView('tree');
+            }}
+          />
         </div>
       ) : (
         <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-red-200">

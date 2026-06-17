@@ -8,7 +8,7 @@ import React from 'react';
  */
 const FamilyCard = ({ person, onViewLineage }) => {
   return (
-    <div className="relative animate-fade-in">
+    <div data-member-id={person.id} className="relative animate-fade-in">
       {/* Decorative background accent */}
       <div className="absolute top-0 left-0 w-1 h-16 bg-gradient-to-b from-heritage-gold to-transparent rounded-r-full"></div>
       
