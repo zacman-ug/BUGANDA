@@ -563,6 +563,91 @@ app.post('/api/individuals', verifyToken, canCreateRecord, async (req, res) => {
 });
 
 /**
+ * PUT /api/individuals/:id
+ * Purpose: Update an individual's details (user-specific). Only the owner or admin can update.
+ */
+app.put('/api/individuals/:id', verifyToken, async (req, res) => {
+    const { id } = req.params;
+    const {
+        full_name, gender, clan_id, father_id, mother_id, bio,
+        date_of_birth, date_of_death, spouse_id, occupation, residence, alternative_name
+    } = req.body;
+
+    try {
+        // Verify record exists and belongs to user (unless admin)
+        const [existingRows] = await pool.execute('SELECT * FROM individuals WHERE id = ? AND user_id = ?', [id, req.userId]);
+
+        if (existingRows.length === 0 && req.userRole !== 'admin') {
+            return res.status(404).json({ error: 'Individual not found or access denied' });
+        }
+
+        // Build dynamic update
+        const fields = [];
+        const values = [];
+
+        const pushField = (name, value) => {
+            fields.push(`${name} = ?`);
+            values.push(value === undefined ? null : value);
+        };
+
+        if (full_name !== undefined) pushField('full_name', full_name);
+        if (gender !== undefined) pushField('gender', gender);
+        if (clan_id !== undefined) pushField('clan_id', clan_id || null);
+        if (father_id !== undefined) pushField('father_id', father_id || null);
+        if (mother_id !== undefined) pushField('mother_id', mother_id || null);
+        if (bio !== undefined) pushField('bio', bio || null);
+        if (date_of_birth !== undefined) pushField('date_of_birth', date_of_birth || null);
+        if (date_of_death !== undefined) pushField('date_of_death', date_of_death || null);
+        if (occupation !== undefined) pushField('occupation', occupation || null);
+        if (residence !== undefined) pushField('residence', residence || null);
+        if (alternative_name !== undefined) pushField('alternative_name', alternative_name || null);
+        // spouse handled after
+
+        if (fields.length > 0) {
+            const sql = `UPDATE individuals SET ${fields.join(', ')} WHERE id = ?`;
+            values.push(id);
+            await pool.execute(sql, values);
+        }
+
+        // Handle spouse linking/unlinking if spouse_id provided in payload
+        if (req.body.hasOwnProperty('spouse_id')) {
+            // Fetch current spouse
+            const [cur] = await pool.execute('SELECT spouse_id FROM individuals WHERE id = ? LIMIT 1', [id]);
+            const currentSpouse = (cur && cur[0]) ? cur[0].spouse_id : null;
+
+            // If setting to null -> unlink both sides
+            if (!spouse_id && currentSpouse) {
+                await pool.execute('UPDATE individuals SET spouse_id = NULL WHERE id = ?', [id]);
+                await pool.execute('UPDATE individuals SET spouse_id = NULL WHERE id = ? AND user_id = ?', [currentSpouse, req.userId]);
+            }
+
+            // If setting to a new spouse id -> validate and link both sides
+            if (spouse_id) {
+                // Ensure spouse exists and belongs to same user (or admin can link any)
+                const [spRows] = await pool.execute('SELECT id, user_id FROM individuals WHERE id = ? LIMIT 1', [spouse_id]);
+                if (spRows.length === 0) {
+                    return res.status(400).json({ error: 'Specified spouse does not exist' });
+                }
+                if (spRows[0].user_id !== req.userId && req.userRole !== 'admin') {
+                    return res.status(403).json({ error: 'Cannot link to a spouse that belongs to another user' });
+                }
+
+                // Update this person's spouse_id
+                await pool.execute('UPDATE individuals SET spouse_id = ? WHERE id = ?', [spouse_id, id]);
+
+                // Also update the spouse's record to point back to this person
+                await pool.execute('UPDATE individuals SET spouse_id = ? WHERE id = ? AND user_id = ?', [id, spouse_id, req.userId]);
+            }
+        }
+
+        res.json({ message: 'Individual updated successfully' });
+    } catch (err) {
+        console.error('Update Individual Error:', err);
+        res.status(500).json({ error: 'Failed to update individual' });
+    }
+});
+
+/**
  * GET /api/clans
  * Purpose: Returns a list of all clans (for the dropdown menu in the form).
  */
