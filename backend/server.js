@@ -456,6 +456,19 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
+
+    if (err.code === 'ECONNREFUSED') {
+        return res.status(503).json({
+            error: 'Database connection failed. Make sure MySQL is running on port 3306.'
+        });
+    }
+
+    if (err.code === 'ER_BAD_FIELD_ERROR' && err.message?.includes('reset_expires')) {
+        return res.status(500).json({
+            error: 'Database schema mismatch. Run ADD_PASSWORD_RESET.sql or backend/migrations/001_full_schema.sql.'
+        });
+    }
+
     res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 

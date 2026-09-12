@@ -24,7 +24,11 @@ export default function ForgotPassword() {
       setMessage(data.message || 'If email exists, verification code will be sent');
       setStep('reset');
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to send reset code');
+      if (!err.response) {
+        setError('Cannot reach the server. Make sure the backend is running on port 5000.');
+      } else {
+        setError(err.response.data?.error || 'Failed to send reset code');
+      }
     } finally {
       setLoading(false);
     }
