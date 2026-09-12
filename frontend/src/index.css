@@ -4,6 +4,7 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: "Source Sans 3", system-ui, -apple-system, sans-serif;
   background: #f8f5f0;
+  -webkit-font-smoothing: antialiased;
 }

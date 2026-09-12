@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { HeritageContext } from '../context/HeritageContext';
-import { useToast } from "../components/Toast";
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useHeritage } from '../context/HeritageContext';
+import { useToast } from '../components/Toast';
+import ClanStoryPanel from '../components/heritage/ClanStoryPanel';
+import PersonPhoto from '../components/PersonPhoto';
 
 /**
  * ClanDirectory - Browse and explore all clans
@@ -10,34 +11,42 @@ import { useToast } from "../components/Toast";
  */
 const ClanDirectory = () => {
   const navigate = useNavigate();
-  const { individuals = [], token } = useContext(HeritageContext);
+  const { individuals = [], token, clans: contextClans, api } = useHeritage();
   const { show: showToast, ToastContainer } = useToast();
   const [clans, setClans] = useState([]);
   const [selectedClan, setSelectedClan] = useState(null);
   const [loading, setLoading] = useState(true);
   const hasInitialized = useRef(false);
 
-  // Fetch clans only once on mount
   useEffect(() => {
-    if (hasInitialized.current) return;
+    if (contextClans.length > 0) {
+      setClans(contextClans);
+      setLoading(false);
+      return;
+    }
+
+    if (hasInitialized.current || !token) {
+      if (!token) setLoading(false);
+      return;
+    }
     hasInitialized.current = true;
 
     const fetchClans = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('/api/clans');
-        setClans(response.data || []);
-        setLoading(false);
+        const { data } = await api.get('/api/clans');
+        setClans(data || []);
       } catch (err) {
         console.error('Failed to load clans:', err);
         showToast('Failed to load clan directory', 'error');
         setClans([]);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchClans();
-  }, []);
+  }, [api, contextClans, showToast, token]);
 
   // Enrich clans with member data when individuals or clans change
   const enrichedClans = clans.map(clan => ({
@@ -48,9 +57,9 @@ const ClanDirectory = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-heritage-light to-white flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-heritage-cream to-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin text-6xl mb-4">⏳</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-heritage-gold mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Loading clan directory...</p>
         </div>
       </div>
@@ -58,11 +67,10 @@ const ClanDirectory = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-heritage-light to-white">
+    <div className="min-h-screen bg-gradient-to-br from-heritage-cream to-white">
       {/* Navbar */}
       <nav className="bg-heritage-dark bg-opacity-95 text-white p-6 flex justify-between items-center shadow-2xl">
         <div className="flex items-center space-x-3">
-          <span className="text-3xl">🏛️</span>
           <h1 className="text-2xl font-bold text-heritage-gold font-serif">Buganda Clans</h1>
         </div>
         <div className="flex items-center gap-4">
@@ -96,9 +104,17 @@ const ClanDirectory = () => {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold font-serif text-transparent bg-clip-text bg-gradient-to-r from-heritage-dark to-heritage-gold mb-4">
-            🏛️ Buganda Clans Directory
+            Buganda Clans Directory
           </h1>
           <p className="text-gray-600 text-lg">Explore the {enrichedClans.length} great clans of Buganda</p>
+          <p className="text-sm text-gray-500 mt-2 max-w-2xl mx-auto">
+            Shared Buganda cultural heritage is public here. Sign in to connect your private family lineage to these clans.
+          </p>
+          {token && (
+            <Link to="/heritage" className="inline-block mt-4 text-heritage-gold font-semibold hover:underline">
+              Open your Heritage Experience →
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -106,8 +122,8 @@ const ClanDirectory = () => {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-heritage-gold/20">
               <div className="bg-gradient-to-r from-heritage-dark to-black text-white p-4">
-                <h2 className="font-bold text-lg flex items-center gap-2">
-                  <span>📋</span> All Clans ({enrichedClans.length})
+                <h2 className="font-bold text-lg">
+                  All Clans ({enrichedClans.length})
                 </h2>
               </div>
               <div className="overflow-y-auto max-h-96">
@@ -120,8 +136,11 @@ const ClanDirectory = () => {
                         selectedClan?.id === clan.id ? 'bg-heritage-gold/20 border-l-4 border-heritage-gold' : ''
                       }`}
                     >
-                      <p className="font-semibold text-heritage-dark">{clan.display_name || clan.name}</p>
-                      <p className="text-sm text-gray-600 mt-1">👥 {clan.memberCount} members</p>
+                      <p className="font-semibold text-heritage-dark">{clan.name}</p>
+                      {clan.totem && (
+                        <p className="text-xs text-heritage-gold mt-0.5">Totem: {clan.totem}</p>
+                      )}
+                      <p className="text-sm text-gray-600 mt-1">{clan.memberCount} members</p>
                     </button>
                   ))
                 ) : (
@@ -134,64 +153,50 @@ const ClanDirectory = () => {
           </div>
 
           {/* Clan Details */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-4">
             {selectedClan ? (
-              <div className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-heritage-gold/20 max-h-96 overflow-y-auto">
-                {/* Clan Header */}
-                <div className="bg-gradient-to-r from-heritage-dark to-black text-white p-8">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="text-4xl font-bold font-serif mb-2">{selectedClan.display_name || selectedClan.name}</h2>
-                      {selectedClan.totem && (
-                        <p className="text-heritage-gold text-lg">Totem: {selectedClan.totem}</p>
-                      )}
-                    </div>
-                    <div className="text-6xl opacity-20">🦁</div>
-                  </div>
-                </div>
+              <>
+                <ClanStoryPanel
+                  clan={selectedClan}
+                  memberCount={selectedClan.memberCount}
+                  isPublic={!token}
+                />
 
-                {/* Clan Info */}
-                <div className="p-8 border-b border-gray-200">
-                  {selectedClan.description && (
-                    <div className="mb-4">
-                      <p className="text-gray-600 mb-2">Description</p>
-                      <p className="text-gray-700 italic">{selectedClan.description}</p>
-                    </div>
-                  )}
-                  <div className="bg-heritage-gold/10 rounded-lg p-4 border border-heritage-gold/20">
-                    <p className="text-sm text-gray-600">Total Members</p>
-                    <p className="text-3xl font-bold text-heritage-gold">{selectedClan.memberCount}</p>
-                  </div>
-                </div>
-
-                {/* Members List */}
-                <div className="p-8">
-                  <h3 className="font-bold text-xl text-heritage-dark mb-4 flex items-center gap-2">
-                    <span>👥</span> Members of {selectedClan.display_name || selectedClan.name}
-                  </h3>
-                  <div className="space-y-3">
-                    {selectedClan.members && selectedClan.members.length > 0 ? (
-                      selectedClan.members.map(member => (
-                        <div key={member.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-heritage-gold/50 transition">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-semibold text-heritage-dark">{member.full_name}</p>
-                              <p className="text-sm text-gray-600">{member.gender}</p>
-                            </div>
-                            <span className="text-2xl">{member.gender === 'Male' ? '👨' : '👩'}</span>
+                {token && selectedClan.members && selectedClan.members.length > 0 && (
+                  <div className="bg-white rounded-lg shadow-lg overflow-hidden border-2 border-heritage-gold/20 p-6">
+                    <h3 className="font-bold text-xl text-heritage-dark mb-4">
+                      Your lineage in {selectedClan.name}
+                    </h3>
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      {selectedClan.members.map((member) => (
+                        <div key={member.id} className="p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-heritage-gold/50 transition flex items-center gap-3">
+                          {member.photo_url ? (
+                            <PersonPhoto src={member.photo_url} alt={member.full_name} className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-10 h-10 rounded-full bg-heritage-cream flex items-center justify-center text-xs font-bold text-heritage-dark">
+                              {member.gender === 'Male' ? 'M' : 'F'}
+                            </span>
+                          )}
+                          <div>
+                            <p className="font-semibold text-heritage-dark">{member.full_name}</p>
+                            <p className="text-sm text-gray-600">{member.gender}</p>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-center text-gray-500 py-4">No members recorded yet</p>
-                    )}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </div>
+                )}
+
+                {!token && (
+                  <div className="bg-heritage-cream rounded-lg p-4 text-center text-sm text-gray-600">
+                    <Link to="/login" className="text-heritage-gold font-semibold hover:underline">Sign in</Link>
+                    {' '}to see how your private lineage connects to this clan.
+                  </div>
+                )}
+              </>
             ) : (
               <div className="bg-white rounded-lg shadow-lg p-12 text-center border-2 border-heritage-gold/20">
-                <p className="text-4xl mb-4">👈</p>
-                <p className="text-gray-600 text-lg">Select a clan to view details</p>
+                <p className="text-gray-600 text-lg">Select a clan from the list to view details</p>
               </div>
             )}
           </div>

@@ -1,70 +1,58 @@
 # Buganda Heritage
 
-A full-stack web application for preserving and exploring Buganda family lineage. Users can register, build family trees, record member details, and manage access through role-based permissions.
+A full-stack web application for preserving and exploring Buganda family lineage — 55 clans, totems (emiziro), generational trees, and heritage visualizations.
 
 ## Features
 
-- **Authentication** — Register, login, profile management, and password reset via email code
-- **Family records** — Add, edit, and delete members with rich profile fields
-- **Family tree** — Interactive generational tree with click-to-view member details
-- **Lineage tracking** — Parents, children, siblings, and spouse relationships
-- **Search & filter** — Find members by name, occupation, or gender
-- **Role-based access** — Admin, contributor, viewer, and moderator roles
-- **Admin dashboard** — Create users, change roles, and manage accounts
-
-### Member fields
-
-| Field | Description |
-|-------|-------------|
-| Full name | Primary name (Erinnya Lijjuvu) |
-| Alternative name | Nickname, clan name, or praise name |
-| Gender | Male / Female |
-| Clan (Omuziro) | Buganda clan affiliation |
-| Father / Mother | Lineage links |
-| Spouse | Bidirectional spouse linking |
-| Date of birth / death | Life dates |
-| Occupation | Role or profession |
-| Residence | Village, county, or region |
-| Bio | Oral history and notes |
+- **Authentication** — Register, login, profile, forgot/reset password (email code)
+- **Family records** — Add, edit, delete members with rich fields (parents, spouse, clan, oral history)
+- **Photo uploads** — Upload ancestor portraits from your device (JPEG, PNG, WebP, GIF)
+- **External parents** — Add a father or mother from outside your tree while linking the other parent
+- **Family tree** — Generational, React Flow, and card views
+- **Heritage Experience** (`/heritage`) — Totem tree, clan alliances, timeline, path to root, narratives, ancestor spotlight, generational rings
+- **Heritage completeness** — Track how well your lineage is documented
+- **55 Buganda clans** — Public clan directory with totems and clan stories
+- **RBAC** — Admin, contributor, moderator, viewer roles with audit log
+- **Search & export** — Advanced filters and CSV/JSON heritage export
 
 ## Tech stack
 
 | Layer | Technology |
 |-------|------------|
-| Frontend | React 18, Vite, Tailwind CSS, React Router |
-| Backend | Node.js, Express 4 |
-| Database | MySQL |
+| Frontend | React 18, Vite, Tailwind CSS, React Router, React Flow, Chart.js |
+| Backend | Node.js, Express 4, Multer |
+| Database | PostgreSQL |
+| ORM | Prisma |
 | Auth | JWT, bcrypt |
-| Security | Helmet, rate limiting, input validation |
 
 ## Project structure
 
 ```
 BUGANDA/
 ├── backend/
-│   ├── config/          # Database connection
-│   ├── models/          # Data access layer
-│   ├── utils/           # Validation helpers
-│   ├── migrations/      # Database schema
-│   ├── tests/           # API tests
-│   └── server.js        # Express API entry point
+│   ├── prisma/           # Schema, migrations, seed data (55 clans)
+│   ├── middleware/       # Photo upload
+│   ├── models/           # Data access layer
+│   ├── lib/              # Prisma client, heritage service, audit log
+│   ├── uploads/          # Member photos (gitignored, created at runtime)
+│   └── server.js
 ├── frontend/
 │   └── src/
-│       ├── components/  # UI components
-│       ├── context/     # Auth & state management
-│       └── pages/       # Route pages
+│       ├── components/   # Forms, trees, heritage visualizations
+│       ├── context/      # Auth and API state
+│       └── pages/        # Home, dashboard, heritage, clans, etc.
 └── README.md
 ```
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
-- [MySQL](https://www.mysql.com/) 8+
+- Node.js 18+
+- PostgreSQL 14+
 - Git
 
 ## Setup
 
-### 1. Clone the repository
+### 1. Clone
 
 ```bash
 git clone https://github.com/zacman-ug/BUGANDA.git
@@ -74,17 +62,14 @@ cd BUGANDA
 ### 2. Create the database
 
 ```bash
-mysql -u root -p < backend/migrations/001_full_schema.sql
+createdb -U postgres buganda_heritage
 ```
 
-This creates the `buganda_heritage` database with tables for users, clans, individuals, and marriages, plus sample clan data.
-
-### 3. Configure the backend
+### 3. Backend
 
 ```bash
 cd backend
-copy .env.example .env        # Windows
-# cp .env.example .env        # macOS / Linux
+copy .env.example .env    # Windows — use cp on macOS/Linux
 ```
 
 Edit `backend/.env`:
@@ -92,32 +77,26 @@ Edit `backend/.env`:
 ```env
 PORT=5000
 NODE_ENV=development
-
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=buganda_heritage
-
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/buganda_heritage
 JWT_SECRET=your-long-random-secret-key
-
 GMAIL_USER=your-email@gmail.com
 GMAIL_APP_PASSWORD=your-gmail-app-password
 ```
 
-> **Note:** Email settings are optional for local development. Without them, password reset codes are printed in the backend console.
-
-Install dependencies and start the API:
+Install, migrate, and seed:
 
 ```bash
 npm install
+npm run db:migrate
+npm run db:seed
 npm start
 ```
 
-The API runs at **http://localhost:5000**.
+API: **http://localhost:5000**
 
-### 4. Start the frontend
+> Without Gmail settings, password reset codes print in the backend console.
 
-In a new terminal:
+### 4. Frontend
 
 ```bash
 cd frontend
@@ -125,96 +104,141 @@ npm install
 npm run dev
 ```
 
-The app opens at **http://localhost:5173**.
+App: **http://localhost:5173**
 
-### 5. First login
+### 5. First user
 
-Register a new account at `/register`. The **first registered user** is automatically assigned the **admin** role.
+Register at `/register`. The **first registered user** becomes **admin**.
 
-## API endpoints
+## Main routes
+
+| Route | Description |
+|-------|-------------|
+| `/` | Home — overview and entry points |
+| `/login`, `/register` | Authentication |
+| `/dashboard` | Lineage home — add/edit members, search, completeness |
+| `/heritage` | Heritage Experience — visualizations |
+| `/family-tree` | Interactive tree views |
+| `/clans` | Public Buganda clan directory |
+| `/profile` | User profile |
+| `/admin` | Admin dashboard (admin only) |
+
+## Database (Prisma)
+
+| Command | Description |
+|---------|-------------|
+| `npm run db:migrate` | Apply migrations (development) |
+| `npm run db:push` | Push schema without migration file |
+| `npm run db:seed` | Seed 55 clans + RBAC data |
+| `npm run db:studio` | Visual database browser |
+
+Schema changes: edit `backend/prisma/schema.prisma`, then run `npm run db:migrate`.
+
+## API overview
 
 ### Auth
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/register` | Register a new user |
-| POST | `/api/auth/login` | Login and receive JWT |
-| GET | `/api/auth/profile` | Get current user profile |
+| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/login` | Login |
+| GET | `/api/auth/profile` | Current user profile |
 | PUT | `/api/auth/profile` | Update profile |
-| POST | `/api/auth/forgot-password-request` | Request password reset code |
-| POST | `/api/auth/reset-password` | Reset password with code |
+| POST | `/api/auth/forgot-password-request` | Request reset code |
+| POST | `/api/auth/reset-password` | Reset password |
 
-### Family members
+### Members & tree
 
-| Method | Endpoint | Description | Roles |
-|--------|----------|-------------|-------|
-| GET | `/api/individuals` | List all members | All |
-| POST | `/api/individuals` | Add a member | Admin, Contributor |
-| PUT | `/api/individuals/:id` | Update a member | Admin, Contributor |
-| DELETE | `/api/individuals/:id` | Delete a member | Admin, Contributor |
-| GET | `/api/individuals/:id/lineage` | Get member lineage | All |
-| GET | `/api/family-tree` | Get tree structure | All |
-| GET | `/api/clans` | List clans | All |
+| Method | Endpoint | Roles |
+|--------|----------|-------|
+| GET | `/api/individuals` | All |
+| POST | `/api/individuals` | Admin, Contributor |
+| PUT | `/api/individuals/:id` | Admin, Contributor, Moderator |
+| DELETE | `/api/individuals/:id` | Admin |
+| GET | `/api/individuals/:id/lineage` | All |
+| GET | `/api/family-tree` | All |
+| POST | `/api/uploads/photo` | Admin, Contributor, Moderator |
+
+### Clans & marriages
+
+| Method | Endpoint | Access |
+|--------|----------|--------|
+| GET | `/api/clans` | Public |
+| GET | `/api/clans/:id/members` | Authenticated |
+| GET/POST/PUT/DELETE | `/api/marriages` | Role-based |
+
+### Heritage
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/heritage/completeness` | Preservation score |
+| GET | `/api/heritage/narrative/:id` | Heritage story |
+| GET | `/api/heritage/path/:id` | Path to root ancestor |
+| GET | `/api/heritage/alliances` | Cross-clan marriage map |
+| GET | `/api/heritage/timeline` | Life events timeline |
+| GET | `/api/heritage/spotlight` | Featured ancestor |
 
 ### Admin
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/admin/users` | List all users |
-| POST | `/api/admin/users` | Create a user |
-| PUT | `/api/admin/users/:id/role` | Change user role |
-| DELETE | `/api/admin/users/:id` | Delete a user |
+| Method | Endpoint |
+|--------|----------|
+| GET/POST/DELETE | `/api/admin/users` |
+| PUT | `/api/admin/users/:id/role` |
+| GET | `/api/admin/roles` |
+| GET | `/api/admin/permissions/:role` |
+| GET | `/api/admin/audit-log` |
 
 ### Health
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Server health check |
+| Method | Endpoint |
+|--------|----------|
+| GET | `/health` |
 
 ## User roles
 
 | Role | Permissions |
 |------|-------------|
-| **Admin** | Full access — manage users and all family records |
-| **Contributor** | Create, edit, and delete family members |
-| **Viewer** | Read-only access to family records |
-| **Moderator** | Reserved for future moderation features |
+| **Admin** | Full access — users, records, audit log |
+| **Contributor** | Create, edit, delete members |
+| **Moderator** | Edit members, manage marriages |
+| **Viewer** | Read-only |
+
+## Deployment
+
+**Frontend** (Netlify / Vercel): `npm run build` in `frontend/`, set `VITE_API_URL` to your API URL.
+
+**Backend** (Fly.io / Render / Railway):
+
+1. Provision PostgreSQL and set `DATABASE_URL`
+2. On deploy: `npx prisma migrate deploy && npx prisma db seed`
+3. Set `JWT_SECRET` and optional Gmail credentials
+4. Ensure `backend/uploads/` persists (volume or object storage) for member photos
 
 ## Scripts
 
-### Backend
-
 ```bash
-npm start    # Start the API server
-npm test     # Run health check test
-```
+# Backend
+npm start              # Start API
+npm test               # Health check test
+npm run db:migrate     # Migrations
+npm run db:seed        # Seed data
 
-### Frontend
-
-```bash
-npm run dev      # Start development server
-npm run build    # Production build
-npm run preview  # Preview production build
-npm run lint     # Run ESLint
+# Frontend
+npm run dev            # Dev server
+npm run build          # Production build
+npm run lint           # ESLint
 ```
 
 ## Security
 
-- JWT authentication on all protected routes
-- Role-based access control on write operations
-- Rate limiting on authentication endpoints
+- JWT on protected routes
+- RBAC on write operations
+- Rate limiting on auth endpoints
 - Helmet security headers
-- Server-side input validation and incest checks for spouse linking
-- Production requires a strong `JWT_SECRET` (server refuses to start with the default)
+- Input validation and spouse-link checks
+- Strong `JWT_SECRET` required in production
+- Never commit `.env` or uploaded photos
 
 ## License
 
 ISC
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/my-feature`)
-3. Commit your changes (`git commit -m "Add my feature"`)
-4. Push to the branch (`git push origin feature/my-feature`)
-5. Open a Pull Request

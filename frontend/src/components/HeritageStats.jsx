@@ -45,10 +45,7 @@ const HeritageStats = ({ data }) => {
       
       <div className="bg-gradient-to-br from-white via-heritage-light to-white p-6 rounded-xl shadow-heritage border-2 border-heritage-gold/20 hover:shadow-heritage-lg transition-all duration-300 overflow-hidden group">
         {/* Background decorative element */}
-        <div className="absolute top-2 right-2 text-heritage-gold text-opacity-10 text-6xl font-serif font-bold">📊</div>
-        
-        <h3 className="text-lg font-bold mb-6 text-heritage-dark font-serif relative z-10 flex items-center gap-3">
-          <span className="text-2xl">👥</span>
+        <h3 className="text-lg font-bold mb-6 text-heritage-dark font-serif relative z-10">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-heritage-dark to-heritage-gold">Clan Distribution Heritage</span>
         </h3>
         <div className="relative z-10">

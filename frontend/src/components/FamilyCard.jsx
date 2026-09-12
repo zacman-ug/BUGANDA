@@ -14,8 +14,6 @@ const FamilyCard = ({ person, onViewLineage }) => {
       
       <div className="bg-gradient-to-br from-white via-heritage-light to-white p-6 shadow-heritage rounded-xl border-2 border-heritage-gold/20 hover:shadow-heritage-lg hover:border-heritage-gold/40 transition-all duration-300 group">
         {/* Ornamental corner accent */}
-        <div className="absolute top-3 right-3 text-heritage-gold text-opacity-30 text-2xl">✦</div>
-        
         <div className="flex justify-between items-start gap-4">
           <div className="flex-1">
             <h3 className="text-xl font-bold font-serif text-heritage-dark group-hover:text-heritage-gold transition-colors duration-300">
@@ -32,7 +30,7 @@ const FamilyCard = ({ person, onViewLineage }) => {
                 ? 'bg-blue-100 text-blue-600 border-2 border-blue-300' 
                 : 'bg-pink-100 text-pink-600 border-2 border-pink-300'
             }`}>
-              {person.gender === 'Male' ? '♂' : '♀'}
+              {person.gender === 'Male' ? 'M' : 'F'}
             </span>
             <span className="text-xs font-semibold text-gray-600">
               {person.gender === 'Male' ? 'Musajja' : 'Mukazi'}

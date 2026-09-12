@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { useHeritage } from '../context/HeritageContext';
+import { exportToJSON } from '../utils/exportUtils';
+import { getTotemIcon, LUGANDA, LIFE_EVENT_META } from '../utils/heritageUtils';
+import PersonPhoto from './PersonPhoto';
 
 export default function MemberDetailsPanel({ member, individuals, onClose, onEdit, onDelete }) {
   const { api, canEditRecord, canDeleteRecord } = useHeritage();
@@ -16,6 +19,12 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
   const siblings = individuals.filter(
     (p) => (p.father_id === father?.id || p.mother_id === mother?.id) && p.id !== member.id
   );
+  const totemIcon = getTotemIcon(member.clan_totem, member.clan_name);
+
+  const lifeEvents = [];
+  if (member.date_of_birth) lifeEvents.push({ ...LIFE_EVENT_META.birth, date: member.date_of_birth });
+  if (member.date_of_death) lifeEvents.push({ ...LIFE_EVENT_META.death, date: member.date_of_death });
+  if (member.spouse_id) lifeEvents.push(LIFE_EVENT_META.marriage);
 
   const handleViewLineage = async () => {
     setLoadingLineage(true);
@@ -50,16 +59,46 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
-            <div>
-              <h2 className="text-2xl font-bold text-heritage-dark">{member.full_name}</h2>
-              {member.alternative_name && (
-                <p className="text-gray-500 italic">aka {member.alternative_name}</p>
+            <div className="flex gap-4 items-start">
+              {member.photo_url ? (
+                <PersonPhoto
+                  src={member.photo_url}
+                  alt={member.full_name}
+                  className="w-16 h-16 rounded-full object-cover border-2 border-heritage-gold"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full bg-heritage-cream flex items-center justify-center text-3xl border-2 border-heritage-gold/50">
+                  {totemIcon}
+                </div>
               )}
+              <div>
+                <h2 className="text-2xl font-bold text-heritage-dark">{member.full_name}</h2>
+                {member.alternative_name && (
+                  <p className="text-gray-500 italic">aka {member.alternative_name}</p>
+                )}
+                {member.clan_totem && (
+                  <p className="text-xs text-heritage-gold mt-1">{LUGANDA.totem}: {member.clan_totem}</p>
+                )}
+              </div>
             </div>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">✕</button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-sm font-semibold">Close</button>
           </div>
 
           {error && <p className="text-red-600 mb-4">{error}</p>}
+
+          {lifeEvents.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {lifeEvents.map((ev) => (
+                <span
+                  key={ev.label}
+                  className={`text-xs px-2 py-1 rounded border ${ev.color}`}
+                >
+                  {ev.label}
+                  {'date' in ev && ev.date ? ` — ${ev.date.split('T')[0]}` : ''}
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -68,18 +107,21 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
                 <p className="font-semibold text-heritage-dark">{member.gender}</p>
               </div>
               <div>
-                <p className="text-gray-600 text-sm">Clan</p>
+                <p className="text-gray-600 text-sm">{LUGANDA.clan} (Omuziro)</p>
                 <p className="font-semibold text-heritage-dark">{member.clan_name || 'N/A'}</p>
+                {member.clan_totem && (
+                  <p className="text-xs text-heritage-gold mt-1">Totem: {member.clan_totem}</p>
+                )}
               </div>
               {member.date_of_birth && (
                 <div>
-                  <p className="text-gray-600 text-sm">Date of Birth</p>
+                  <p className="text-gray-600 text-sm">{LUGANDA.birth}</p>
                   <p className="font-semibold text-heritage-dark">{member.date_of_birth?.split('T')[0]}</p>
                 </div>
               )}
               {member.date_of_death && (
                 <div>
-                  <p className="text-gray-600 text-sm">Date of Death</p>
+                  <p className="text-gray-600 text-sm">{LUGANDA.death}</p>
                   <p className="font-semibold text-heritage-dark">{member.date_of_death?.split('T')[0]}</p>
                 </div>
               )}
@@ -97,7 +139,7 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
               )}
               {spouse && (
                 <div>
-                  <p className="text-gray-600 text-sm">Spouse</p>
+                  <p className="text-gray-600 text-sm">{LUGANDA.spouse}</p>
                   <p className="font-semibold text-heritage-dark">{spouse.full_name}</p>
                 </div>
               )}
@@ -105,26 +147,43 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
 
             {member.bio && (
               <div>
-                <p className="text-gray-600 text-sm">Bio</p>
+                <p className="text-gray-600 text-sm">{LUGANDA.oralHistory}</p>
                 <p className="text-heritage-dark">{member.bio}</p>
               </div>
             )}
 
+            {!member.photo_url && (
+              <p className="text-xs text-gray-500 italic bg-heritage-cream p-2 rounded">
+                Add a photo to preserve this ancestor&apos;s memory.
+              </p>
+            )}
+
+            {member.is_external && (
+              <p className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded inline-block">
+                {LUGANDA.outsideFamily}
+              </p>
+            )}
             {father && (
               <div>
-                <p className="text-gray-600 text-sm">Father</p>
-                <p className="font-semibold text-heritage-dark">{father.full_name}</p>
+                <p className="text-gray-600 text-sm">{LUGANDA.father}</p>
+                <p className="font-semibold text-heritage-dark">
+                  {father.full_name}
+                  {father.is_external && <span className="text-xs text-blue-600 ml-1">(outside family)</span>}
+                </p>
               </div>
             )}
             {mother && (
               <div>
-                <p className="text-gray-600 text-sm">Mother</p>
-                <p className="font-semibold text-heritage-dark">{mother.full_name}</p>
+                <p className="text-gray-600 text-sm">{LUGANDA.mother}</p>
+                <p className="font-semibold text-heritage-dark">
+                  {mother.full_name}
+                  {mother.is_external && <span className="text-xs text-blue-600 ml-1">(outside family)</span>}
+                </p>
               </div>
             )}
             {children.length > 0 && (
               <div>
-                <p className="text-gray-600 text-sm">Children ({children.length})</p>
+                <p className="text-gray-600 text-sm">{LUGANDA.children} ({children.length})</p>
                 <ul className="list-disc list-inside">
                   {children.map((c) => <li key={c.id}>{c.full_name}</li>)}
                 </ul>
@@ -132,7 +191,7 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
             )}
             {siblings.length > 0 && (
               <div>
-                <p className="text-gray-600 text-sm">Siblings ({siblings.length})</p>
+                <p className="text-gray-600 text-sm">Ab&apos;omu nju — Siblings ({siblings.length})</p>
                 <ul className="list-disc list-inside">
                   {siblings.map((s) => <li key={s.id}>{s.full_name}</li>)}
                 </ul>
@@ -142,12 +201,12 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
 
           {lineage && (
             <div className="mt-4 p-4 bg-purple-50 rounded border border-purple-200">
-              <h3 className="font-bold text-heritage-dark mb-2">Lineage</h3>
-              {lineage.parents.father && <p className="text-sm">Father: {lineage.parents.father.full_name}</p>}
-              {lineage.parents.mother && <p className="text-sm">Mother: {lineage.parents.mother.full_name}</p>}
+              <h3 className="font-bold text-heritage-dark mb-2">{LUGANDA.lineage}</h3>
+              {lineage.parents.father && <p className="text-sm">{LUGANDA.father}: {lineage.parents.father.full_name}</p>}
+              {lineage.parents.mother && <p className="text-sm">{LUGANDA.mother}: {lineage.parents.mother.full_name}</p>}
               {lineage.children.length > 0 && (
                 <p className="text-sm mt-2">
-                  Children: {lineage.children.map((c) => c.full_name).join(', ')}
+                  {LUGANDA.children}: {lineage.children.map((c) => c.full_name).join(', ')}
                 </p>
               )}
             </div>
@@ -159,7 +218,13 @@ export default function MemberDetailsPanel({ member, individuals, onClose, onEdi
               disabled={loadingLineage}
               className="bg-purple-600 text-white px-4 py-2 rounded font-semibold disabled:opacity-50"
             >
-              {loadingLineage ? 'Loading...' : 'View Lineage'}
+              {loadingLineage ? 'Loading...' : `View ${LUGANDA.lineage}`}
+            </button>
+            <button
+              onClick={() => exportToJSON(member, `${member.full_name.replace(/\s+/g, '_')}_heritage.json`)}
+              className="border border-gray-400 text-gray-700 px-4 py-2 rounded font-semibold"
+            >
+              Share Heritage
             </button>
             {canEditRecord() && (
               <button

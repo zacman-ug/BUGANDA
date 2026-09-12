@@ -10,6 +10,9 @@ node_modules/
 frontend/dist/
 dist/
 
+# Uploaded member photos
+backend/uploads/
+
 # Logs
 *.log
 npm-debug.log*

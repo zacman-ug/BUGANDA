@@ -1,274 +1,340 @@
-import React, { useState, useContext, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { HeritageContext } from '../context/HeritageContext';
-import Layout from '../components/Layout';
+import { useState, useEffect } from 'react';
+
+import { useNavigate, Link } from 'react-router-dom';
+
+import { useHeritage } from '../context/HeritageContext';
+
 import { useToast } from '../components/Toast';
 
-const UserProfile = () => {
-  const { user, setUser, logout, token, individuals } = useContext(HeritageContext);
+
+
+export default function UserProfile() {
+
+  const { user, logout, token, individuals, api, updateProfile } = useHeritage();
+
   const navigate = useNavigate();
+
   const { show: showToast, ToastContainer } = useToast();
+
   const [isEditing, setIsEditing] = useState(false);
+
+  const [profileMeta, setProfileMeta] = useState({ created_at: null });
+
   const [formData, setFormData] = useState({
+
     full_name: user?.full_name || '',
+
     phone: '',
+
     bio: ''
+
   });
+
   const [loading, setLoading] = useState(false);
 
+
+
   useEffect(() => {
+
     if (!token) return;
 
+
+
     const fetchProfile = async () => {
+
       try {
-        const response = await axios.get('/api/auth/profile');
+
+        const { data } = await api.get('/api/auth/profile');
+
         setFormData({
-          full_name: response.data.full_name,
-          phone: response.data.phone || '',
-          bio: response.data.bio || ''
+
+          full_name: data.full_name,
+
+          phone: data.phone || '',
+
+          bio: data.bio || ''
+
         });
+
+        setProfileMeta({ created_at: data.created_at });
+
       } catch (err) {
+
         console.error('Error fetching profile:', err);
+
       }
+
     };
 
+
+
     fetchProfile();
-  }, [token]);
+
+  }, [token, api]);
+
+
 
   const handleSubmit = async (e) => {
+
     e.preventDefault();
+
     setLoading(true);
 
+
+
     try {
-      await axios.put('/api/auth/profile', formData);
-      showToast('✓ Profile updated successfully!', 'success');
+
+      await updateProfile(formData);
+
+      showToast('Profile updated successfully', 'success');
+
       setIsEditing(false);
 
-      setUser({
-        ...user,
-        full_name: formData.full_name
-      });
     } catch (err) {
+
       showToast(err.response?.data?.error || 'Failed to update profile', 'error');
+
     } finally {
+
       setLoading(false);
+
     }
+
   };
+
+
 
   const handleLogout = () => {
+
     logout();
+
     navigate('/login');
+
   };
 
-  // Calculate user statistics
+
+
   const userStats = {
+
     totalRecords: individuals.length,
-    userContribution: Math.floor(Math.random() * individuals.length * 0.3), // Demo: random contribution
-    lastUpdated: new Date().toLocaleDateString()
+
+    accountSince: profileMeta.created_at
+
+      ? new Date(profileMeta.created_at).toLocaleDateString()
+
+      : '—'
+
   };
+
+
 
   return (
-    <Layout>
+
+    <div className="min-h-screen bg-heritage-cream">
+
       <ToastContainer />
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-heritage-dark to-heritage-gold font-serif mb-2">
-            👤 Your Profile
-          </h1>
-          <p className="text-gray-600 text-lg">Manage your account and heritage contributions</p>
+
+      <header className="bg-heritage-dark text-white p-4 flex justify-between items-center">
+
+        <h1 className="text-xl font-bold">Your Profile</h1>
+
+        <div className="flex flex-wrap gap-4 text-sm">
+
+          <Link to="/" className="text-heritage-gold hover:underline">Home</Link>
+
+          <Link to="/dashboard" className="text-heritage-gold hover:underline">Lineage Home</Link>
+
+          <Link to="/heritage" className="text-heritage-gold">Heritage Experience</Link>
+
+          <Link to="/family-tree" className="text-heritage-gold">Family Tree</Link>
+
         </div>
+
+      </header>
+
+
+
+      <div className="max-w-4xl mx-auto p-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Quick Stats */}
-          <div className="space-y-6">
-            {/* Contribution Stats */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-2 border-blue-200">
-              <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
-                <span>📊</span> Your Contributions
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-blue-700 mb-1">Records Added</p>
-                  <p className="text-3xl font-bold text-blue-900">{userStats.userContribution}</p>
-                </div>
-                <div className="pt-3 border-t border-blue-200">
-                  <p className="text-sm text-blue-700 mb-1">Last Updated</p>
-                  <p className="text-blue-900 font-semibold">{userStats.lastUpdated}</p>
-                </div>
-              </div>
+
+          <div className="space-y-4">
+
+            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-heritage-gold">
+
+              <h3 className="font-bold text-heritage-dark mb-3">Heritage Preserved</h3>
+
+              <p className="text-sm text-gray-600">Lives connected in your lineage</p>
+
+              <p className="text-3xl font-bold text-heritage-gold">{userStats.totalRecords}</p>
+
+              <p className="text-xs text-gray-500 mt-3">Member since {userStats.accountSince}</p>
+
             </div>
 
-            {/* Archive Stats */}
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-2 border-purple-200">
-              <h3 className="text-lg font-bold text-purple-900 mb-4 flex items-center gap-2">
-                <span>🏛️</span> Archive Stats
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-purple-700 mb-1">Total Members</p>
-                  <p className="text-3xl font-bold text-purple-900">{userStats.totalRecords}</p>
-                </div>
-                <div className="pt-3 border-t border-purple-200">
-                  <p className="text-sm text-purple-700">Database Size</p>
-                  <div className="w-full bg-purple-200 rounded-full h-2 mt-2">
-                    <div
-                      className="bg-purple-900 h-2 rounded-full transition-all"
-                      style={{ width: `${(userStats.totalRecords / 1000) * 100}%` }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
+            <div className="bg-white rounded-lg shadow p-6">
+
+              <h3 className="font-bold text-heritage-dark mb-3">Account</h3>
+
+              <p className="text-sm text-gray-600">Role</p>
+
+              <p className="font-semibold capitalize">{user?.role || 'viewer'}</p>
+
+              <p className="text-sm text-gray-600 mt-3">Email</p>
+
+              <p className="font-semibold">{user?.email}</p>
+
             </div>
 
-            {/* Account Status */}
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 border-2 border-green-200">
-              <h3 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-2">
-                <span>✓</span> Account Status
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-green-700">Verification</span>
-                  <span className="text-xs bg-green-200 text-green-900 px-3 py-1 rounded-full font-bold">
-                    Verified
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-2">
-                  <span className="text-sm text-green-700">Role</span>
-                  <span className={`text-xs px-3 py-1 rounded-full font-bold ${
-                    user?.role === 'admin' ? 'bg-red-100 text-red-900' :
-                    user?.role === 'moderator' ? 'bg-blue-100 text-blue-900' :
-                    user?.role === 'contributor' ? 'bg-green-100 text-green-900' :
-                    'bg-gray-100 text-gray-900'
-                  }`}>
-                    {user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1) || 'Viewer'}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
 
-          {/* Right Column - Profile Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-lg p-8 border-t-8 border-heritage-gold">
-              <h2 className="text-2xl font-bold text-heritage-dark mb-6 font-serif">
-                {isEditing ? '✏️ Edit Profile' : '📋 Profile Information'}
-              </h2>
 
-              {!isEditing ? (
-                /* Display Mode */
-                <div className="space-y-6">
-                  {/* Full Name */}
-                  <div className="pb-6 border-b border-gray-200">
-                    <label className="block text-sm font-bold text-gray-600 mb-3">Full Name</label>
-                    <p className="text-2xl font-bold text-gray-900">{formData.full_name}</p>
-                  </div>
 
-                  {/* Email */}
-                  <div className="pb-6 border-b border-gray-200">
-                    <label className="block text-sm font-bold text-gray-600 mb-3">Email Address</label>
-                    <p className="text-lg text-gray-800">{user?.email}</p>
-                    <p className="text-xs text-gray-500 mt-1">✓ Verified</p>
-                  </div>
+          <div className="lg:col-span-2 bg-white rounded-lg shadow p-8">
 
-                  {/* Phone */}
-                  <div className="pb-6 border-b border-gray-200">
-                    <label className="block text-sm font-bold text-gray-600 mb-3">Phone Number</label>
-                    <p className="text-lg text-gray-800">
-                      {formData.phone || <span className="text-gray-400 italic">Not provided</span>}
-                    </p>
-                  </div>
+            <h2 className="text-2xl font-bold text-heritage-dark mb-6">
 
-                  {/* Bio */}
-                  <div className="pb-6">
-                    <label className="block text-sm font-bold text-gray-600 mb-3">About You</label>
-                    <p className="text-gray-800 leading-relaxed bg-gray-50 p-4 rounded-lg">
-                      {formData.bio || <span className="text-gray-400 italic">No bio added yet. Click edit to add your story.</span>}
-                    </p>
-                  </div>
+              {isEditing ? 'Edit Profile' : 'Profile Information'}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-6 border-t">
-                    <button
-                      onClick={() => setIsEditing(true)}
-                      className="flex-1 bg-heritage-gold hover:bg-yellow-500 text-heritage-dark font-bold py-3 px-4 rounded-lg transition"
-                    >
-                      ✎ Edit Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition"
-                    >
-                      🚪 Logout
-                    </button>
-                  </div>
+            </h2>
+
+
+
+            {!isEditing ? (
+
+              <div className="space-y-5">
+
+                <div>
+
+                  <p className="text-sm text-gray-600">Full Name</p>
+
+                  <p className="text-xl font-bold">{formData.full_name}</p>
+
                 </div>
-              ) : (
-                /* Edit Mode */
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">Full Name</label>
-                    <input
-                      type="text"
-                      value={formData.full_name}
-                      onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                      className="w-full border-2 border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-heritage-gold focus:border-heritage-gold outline-none transition"
-                      required
-                    />
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">Phone Number</label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full border-2 border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-heritage-gold focus:border-heritage-gold outline-none transition"
-                      placeholder="e.g., +256 701 234567"
-                    />
-                  </div>
+                <div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-3">About You</label>
-                    <textarea
-                      value={formData.bio}
-                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                      className="w-full border-2 border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-heritage-gold focus:border-heritage-gold outline-none transition resize-none"
-                      rows="5"
-                      placeholder="Tell us about yourself, your heritage, and your contribution to preserving Buganda's legacy..."
-                    />
-                  </div>
+                  <p className="text-sm text-gray-600">Phone</p>
 
-                  {/* Save/Cancel Buttons */}
-                  <div className="flex gap-3 pt-6 border-t">
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className={`flex-1 font-bold py-3 px-4 rounded-lg transition ${
-                        loading
-                          ? 'bg-gray-400 cursor-not-allowed'
-                          : 'bg-heritage-dark hover:bg-gray-800 text-white'
-                      }`}
-                    >
-                      {loading ? '⏳ Saving...' : '✓ Save Changes'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsEditing(false)}
-                      className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-3 px-4 rounded-lg transition"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+                  <p>{formData.phone || 'Not provided'}</p>
+
+                </div>
+
+                <div>
+
+                  <p className="text-sm text-gray-600">About You</p>
+
+                  <p className="text-gray-700">{formData.bio || 'No bio added yet.'}</p>
+
+                </div>
+
+                <div className="flex gap-3 pt-4">
+
+                  <button onClick={() => setIsEditing(true)} className="bg-heritage-gold text-white px-4 py-2 rounded font-semibold">
+
+                    Edit Profile
+
+                  </button>
+
+                  <button onClick={handleLogout} className="bg-red-600 text-white px-4 py-2 rounded font-semibold">
+
+                    Logout
+
+                  </button>
+
+                </div>
+
+              </div>
+
+            ) : (
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+
+                <label className="block">
+
+                  <span className="text-sm text-gray-600">Full Name</span>
+
+                  <input
+
+                    type="text"
+
+                    value={formData.full_name}
+
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+
+                    className="w-full mt-1 p-2 border rounded"
+
+                    required
+
+                  />
+
+                </label>
+
+                <label className="block">
+
+                  <span className="text-sm text-gray-600">Phone</span>
+
+                  <input
+
+                    type="tel"
+
+                    value={formData.phone}
+
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+
+                    className="w-full mt-1 p-2 border rounded"
+
+                  />
+
+                </label>
+
+                <label className="block">
+
+                  <span className="text-sm text-gray-600">About You</span>
+
+                  <textarea
+
+                    value={formData.bio}
+
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+
+                    rows={4}
+
+                    className="w-full mt-1 p-2 border rounded"
+
+                  />
+
+                </label>
+
+                <div className="flex gap-3">
+
+                  <button type="submit" disabled={loading} className="bg-heritage-dark text-white px-4 py-2 rounded font-semibold disabled:opacity-50">
+
+                    {loading ? 'Saving...' : 'Save Changes'}
+
+                  </button>
+
+                  <button type="button" onClick={() => setIsEditing(false)} className="px-4 py-2 border rounded">
+
+                    Cancel
+
+                  </button>
+
+                </div>
+
+              </form>
+
+            )}
+
           </div>
+
         </div>
-      </div>
-    </Layout>
-  );
-};
 
-export default UserProfile;
+      </div>
+
+    </div>
+
+  );
+
+}
+

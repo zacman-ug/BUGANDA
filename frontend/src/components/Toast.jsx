@@ -17,16 +17,8 @@ export const Toast = ({ message, type = 'info', onClose, duration = 4000 }) => {
     info: 'bg-gradient-to-r from-blue-500 to-blue-600'
   }[type];
 
-  const icon = {
-    success: '✓',
-    error: '✕',
-    warning: '⚠',
-    info: 'ℹ'
-  }[type];
-
   return (
     <div className={`${bgColor} text-white px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-slide-down backdrop-blur-sm border border-white/20`}>
-      <span className="text-2xl font-bold">{icon}</span>
       <span className="font-medium">{message}</span>
     </div>
   );

@@ -59,7 +59,7 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
               to="/dashboard"
               className="text-2xl font-bold text-heritage-gold mb-10 border-b-2 border-heritage-gold pb-4 font-serif hover:text-yellow-300 transition block relative z-10"
             >
-              ✦ Buganda Heritage
+              Buganda Heritage
             </Link>
           </div>
 
@@ -70,7 +70,6 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
                 to="/"
                 className="flex items-center space-x-3 text-gray-300 hover:text-heritage-gold hover:bg-gray-800 transition-all duration-200 p-3 rounded-lg group border-l-4 border-transparent hover:border-heritage-gold hover:pl-4"
               >
-                <span className="text-xl group-hover:scale-110 transition-transform">🏠</span>
                 <span className="font-semibold group-hover:text-heritage-gold">Home</span>
               </Link>
             </li>
@@ -84,7 +83,6 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
               }`}
               onClick={handleDashboardClick}
             >
-              <span className="text-xl group-hover:scale-110 transition-transform">📊</span>
               <span className="font-semibold">Dashboard</span>
             </li>
 
@@ -97,7 +95,6 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
               }`}
               onClick={handleFamilyTreeClick}
             >
-              <span className="text-xl group-hover:scale-110 transition-transform">🌳</span>
               <span className="font-semibold">Family Tree</span>
             </li>
 
@@ -111,7 +108,6 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
                 }`}
                 onClick={handleAddRecordClick}
               >
-                <span className="text-xl group-hover:scale-110 transition-transform">➕</span>
                 <span className="font-semibold">Add Record</span>
               </li>
             )}
@@ -122,13 +118,11 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
                 to="/clans"
                 className="flex items-center space-x-3 text-gray-300 hover:text-heritage-gold hover:bg-gray-800 transition-all duration-200 p-3 rounded-lg group border-l-4 border-transparent hover:border-heritage-gold hover:pl-4"
               >
-                <span className="text-xl group-hover:scale-110 transition-transform">🏛️</span>
                 <span className="font-semibold group-hover:text-heritage-gold">Clans Directory</span>
               </Link>
             </li>
 
-            <li className="text-gray-500 text-xs mt-8 border-t border-gray-700 pt-4 italic flex items-center gap-2">
-              <span>✨</span>
+            <li className="text-gray-500 text-xs mt-8 border-t border-gray-700 pt-4 italic">
               Features
             </li>
           </ul>
@@ -149,7 +143,7 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
               to="/admin"
               className="block w-full text-center bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition text-sm"
             >
-              👑 Admin Dashboard
+              Admin Dashboard
             </Link>
           )}
 
@@ -157,14 +151,14 @@ const Layout = ({ children, setView, currentView, onFamilyTreeClick }) => {
             to="/profile"
             className="block w-full text-center bg-heritage-gold text-white py-2 rounded-lg font-bold hover:bg-yellow-600 transition text-sm"
           >
-            👤 Profile
+            Profile
           </Link>
 
           <button
             onClick={handleLogout}
             className="w-full bg-red-600 text-white py-2 rounded-lg font-bold hover:bg-red-700 transition text-sm"
           >
-            🚪 Logout
+            Logout
           </button>
         </div>
       </nav>

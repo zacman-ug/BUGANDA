@@ -1,12 +1,12 @@
-import React, { useState, useContext } from 'react';
-import { HeritageContext } from '../context/HeritageContext';
+import { useState } from 'react';
+import { useHeritage } from '../context/HeritageContext';
 
 /**
  * LineageViewer - Display ancestral lineage and descendants
  * Shows ancestors, descendants, and family connections
  */
 const LineageViewer = ({ memberId, onClose }) => {
-  const { individuals } = useContext(HeritageContext);
+  const { individuals } = useHeritage();
   const [expandedGenerations, setExpandedGenerations] = useState({
     ancestors: true,
     descendants: true
@@ -87,14 +87,14 @@ const LineageViewer = ({ memberId, onClose }) => {
         {/* Header */}
         <div className="sticky top-0 bg-gradient-to-r from-heritage-dark to-black text-white p-6 flex justify-between items-start border-b border-heritage-gold/30">
           <div>
-            <h2 className="text-3xl font-bold font-serif mb-2">🌳 Ancestral Lineage</h2>
+            <h2 className="text-3xl font-bold font-serif mb-2">Ancestral Lineage</h2>
             <p className="text-heritage-gold">{member.full_name}</p>
           </div>
           <button
             onClick={onClose}
             className="text-2xl hover:text-heritage-gold transition text-white"
           >
-            ✕
+            Close
           </button>
         </div>
 
@@ -110,7 +110,7 @@ const LineageViewer = ({ memberId, onClose }) => {
                 }))}
                 className="w-full flex items-center justify-between bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400 hover:bg-blue-100 transition font-bold text-blue-900"
               >
-                <span>🔼 Ancestors ({ancestors.length})</span>
+                <span>Ancestors ({ancestors.length})</span>
                 <span>{expandedGenerations.ancestors ? '−' : '+'}</span>
               </button>
 
@@ -131,11 +131,11 @@ const LineageViewer = ({ memberId, onClose }) => {
                               <div>
                                 <p className="font-semibold text-blue-900">{ancestor.full_name}</p>
                                 <p className="text-sm text-blue-700">
-                                  {ancestor.type === 'father' ? '👨 Father' : '👩 Mother'} • {ancestor.clan_name}
+                                  {ancestor.type === 'father' ? 'Father' : 'Mother'} · {ancestor.clan_name}
                                 </p>
                               </div>
-                              <span className="text-lg">
-                                {ancestor.gender === 'Male' ? '👨' : '👩'}
+                              <span className="text-xs font-bold text-blue-700">
+                                {ancestor.gender === 'Male' ? 'M' : 'F'}
                               </span>
                             </div>
                           </div>
@@ -152,7 +152,7 @@ const LineageViewer = ({ memberId, onClose }) => {
           <div className="bg-gradient-to-r from-heritage-gold/20 to-yellow-100 p-4 rounded-lg border-2 border-heritage-gold/50 text-center">
             <p className="text-sm text-gray-600 mb-2">Current Person</p>
             <p className="text-2xl font-bold text-heritage-dark">{member.full_name}</p>
-            <p className="text-sm text-gray-700 mt-1">👤 {member.gender} • {member.clan_name}</p>
+            <p className="text-sm text-gray-700 mt-1">{member.gender} · {member.clan_name}</p>
           </div>
 
           {/* Descendants Section */}
@@ -165,7 +165,7 @@ const LineageViewer = ({ memberId, onClose }) => {
                 }))}
                 className="w-full flex items-center justify-between bg-green-50 p-4 rounded-lg border-l-4 border-green-400 hover:bg-green-100 transition font-bold text-green-900"
               >
-                <span>🔽 Descendants ({descendants.length})</span>
+                <span>Descendants ({descendants.length})</span>
                 <span>{expandedGenerations.descendants ? '−' : '+'}</span>
               </button>
 
@@ -186,11 +186,11 @@ const LineageViewer = ({ memberId, onClose }) => {
                               <div>
                                 <p className="font-semibold text-green-900">{descendant.full_name}</p>
                                 <p className="text-sm text-green-700">
-                                  {descendant.gender === 'Male' ? '♂ Son' : '♀ Daughter'} • {descendant.clan_name}
+                                  {descendant.gender === 'Male' ? 'Son' : 'Daughter'} · {descendant.clan_name}
                                 </p>
                               </div>
-                              <span className="text-lg">
-                                {descendant.gender === 'Male' ? '👨' : '👩'}
+                              <span className="text-xs font-bold text-green-700">
+                                {descendant.gender === 'Male' ? 'M' : 'F'}
                               </span>
                             </div>
                           </div>

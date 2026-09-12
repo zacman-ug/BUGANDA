@@ -1,13 +1,14 @@
-const pool = require('../config/db');
+const prisma = require('../lib/prisma');
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function validateDateField(value, fieldName) {
     if (value == null || value === '') return null;
-    if (!DATE_REGEX.test(value)) {
+    const dateStr = value instanceof Date ? value.toISOString().split('T')[0] : String(value);
+    if (!DATE_REGEX.test(dateStr)) {
         return `${fieldName} must be in YYYY-MM-DD format`;
     }
-    const parsed = new Date(value);
+    const parsed = new Date(dateStr);
     if (Number.isNaN(parsed.getTime())) {
         return `${fieldName} is not a valid date`;
     }
@@ -20,8 +21,12 @@ function validateDates(dateOfBirth, dateOfDeath) {
     const dodError = validateDateField(dateOfDeath, 'date_of_death');
     if (dobError) errors.push(dobError);
     if (dodError) errors.push(dodError);
-    if (!dobError && !dodError && dateOfBirth && dateOfDeath && dateOfDeath < dateOfBirth) {
-        errors.push('date_of_death cannot be before date_of_birth');
+    if (!dobError && !dodError && dateOfBirth && dateOfDeath) {
+        const dob = dateOfBirth instanceof Date ? dateOfBirth.toISOString().split('T')[0] : dateOfBirth;
+        const dod = dateOfDeath instanceof Date ? dateOfDeath.toISOString().split('T')[0] : dateOfDeath;
+        if (dod < dob) {
+            errors.push('date_of_death cannot be before date_of_birth');
+        }
     }
     return errors;
 }
@@ -39,11 +44,11 @@ async function validateIndividualIds(userId, { father_id, mother_id, spouse_id, 
             errors.push(`${label} cannot reference the same individual`);
             continue;
         }
-        const [rows] = await pool.execute(
-            'SELECT id FROM individuals WHERE id = ? AND user_id = ?',
-            [id, userId]
-        );
-        if (rows.length === 0) {
+        const record = await prisma.individual.findFirst({
+            where: { id: Number(id), user_id: userId },
+            select: { id: true }
+        });
+        if (!record) {
             errors.push(`${label} does not belong to your family records`);
         }
     }
@@ -56,10 +61,10 @@ async function isRelated(individualId, candidateId, userId) {
         return false;
     }
 
-    const [rows] = await pool.execute(
-        'SELECT id, father_id, mother_id FROM individuals WHERE user_id = ?',
-        [userId]
-    );
+    const rows = await prisma.individual.findMany({
+        where: { user_id: userId },
+        select: { id: true, father_id: true, mother_id: true }
+    });
 
     const byId = new Map(rows.map((row) => [row.id, row]));
 
